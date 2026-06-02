@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Hausa language learning app API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: lessons
+    description: Lesson operations
+  - name: exercises
+    description: Exercise operations
+  - name: progress
+    description: User progress operations
+  - name: vocabulary
+    description: Vocabulary operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +30,196 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /lessons:
+    get:
+      operationId: getLessons
+      tags: [lessons]
+      summary: List all lessons
+      responses:
+        "200":
+          description: List of lessons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lesson"
+
+  /lessons/categories:
+    get:
+      operationId: getLessonCategories
+      tags: [lessons]
+      summary: Get all lesson categories with progress
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LessonCategory"
+
+  /lessons/{id}:
+    get:
+      operationId: getLesson
+      tags: [lessons]
+      summary: Get a lesson by ID with exercises
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lesson details with exercises
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonDetail"
+        "404":
+          description: Lesson not found
+
+  /lessons/{id}/complete:
+    post:
+      operationId: completeLesson
+      tags: [lessons]
+      summary: Mark a lesson as complete and earn XP
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LessonCompleteInput"
+      responses:
+        "200":
+          description: Lesson completion result with XP earned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonCompleteResult"
+
+  /exercises/{lessonId}:
+    get:
+      operationId: getExercises
+      tags: [exercises]
+      summary: Get all exercises for a lesson
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+
+  /exercises/{id}/answer:
+    post:
+      operationId: submitAnswer
+      tags: [exercises]
+      summary: Submit an answer to an exercise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerInput"
+      responses:
+        "200":
+          description: Answer result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResult"
+
+  /progress:
+    get:
+      operationId: getProgress
+      tags: [progress]
+      summary: Get user overall progress
+      responses:
+        "200":
+          description: User progress stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProgress"
+
+  /progress/activity:
+    get:
+      operationId: getActivityFeed
+      tags: [progress]
+      summary: Get recent learning activity and milestones
+      responses:
+        "200":
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /vocabulary:
+    get:
+      operationId: getVocabulary
+      tags: [vocabulary]
+      summary: Get vocabulary list
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vocabulary list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VocabWord"
+
+  /vocabulary/random:
+    get:
+      operationId: getRandomVocab
+      tags: [vocabulary]
+      summary: Get random vocabulary words for quick practice
+      responses:
+        "200":
+          description: Random vocab words
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VocabWord"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +230,191 @@ components:
       required:
         - status
 
+    Lesson:
+      type: object
+      required: [id, title, description, category, xpReward, order, isUnlocked, isCompleted, exerciseCount]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        xpReward:
+          type: integer
+        order:
+          type: integer
+        isUnlocked:
+          type: boolean
+        isCompleted:
+          type: boolean
+        exerciseCount:
+          type: integer
+        iconEmoji:
+          type: ["string", "null"]
+
+    LessonCategory:
+      type: object
+      required: [name, lessons, completedCount, totalCount]
+      properties:
+        name:
+          type: string
+        lessons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lesson"
+        completedCount:
+          type: integer
+        totalCount:
+          type: integer
+
+    LessonDetail:
+      type: object
+      required: [id, title, description, category, xpReward, order, isUnlocked, isCompleted, exerciseCount, exercises]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        xpReward:
+          type: integer
+        order:
+          type: integer
+        isUnlocked:
+          type: boolean
+        isCompleted:
+          type: boolean
+        exerciseCount:
+          type: integer
+        iconEmoji:
+          type: ["string", "null"]
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/Exercise"
+
+    Exercise:
+      type: object
+      required: [id, lessonId, type, question, options, order]
+      properties:
+        id:
+          type: integer
+        lessonId:
+          type: integer
+        type:
+          type: string
+          enum: [multiple_choice, translation, fill_blank, match_pair]
+        question:
+          type: string
+        hausa:
+          type: ["string", "null"]
+        english:
+          type: ["string", "null"]
+        options:
+          type: array
+          items:
+            type: string
+        order:
+          type: integer
+        hint:
+          type: ["string", "null"]
+
+    LessonCompleteInput:
+      type: object
+      required: [score]
+      properties:
+        score:
+          type: integer
+          description: Number of correct answers
+
+    LessonCompleteResult:
+      type: object
+      required: [xpEarned, totalXp, streak, isNewBest]
+      properties:
+        xpEarned:
+          type: integer
+        totalXp:
+          type: integer
+        streak:
+          type: integer
+        isNewBest:
+          type: boolean
+        message:
+          type: ["string", "null"]
+
+    AnswerInput:
+      type: object
+      required: [answer]
+      properties:
+        answer:
+          type: string
+
+    AnswerResult:
+      type: object
+      required: [isCorrect, correctAnswer]
+      properties:
+        isCorrect:
+          type: boolean
+        correctAnswer:
+          type: string
+        explanation:
+          type: ["string", "null"]
+
+    UserProgress:
+      type: object
+      required: [totalXp, streak, completedLessons, totalLessons, level, weeklyXp]
+      properties:
+        totalXp:
+          type: integer
+        streak:
+          type: integer
+        completedLessons:
+          type: integer
+        totalLessons:
+          type: integer
+        level:
+          type: integer
+        weeklyXp:
+          type: integer
+        longestStreak:
+          type: integer
+
+    ActivityItem:
+      type: object
+      required: [id, type, description, xp, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        xp:
+          type: integer
+        createdAt:
+          type: string
+
+    VocabWord:
+      type: object
+      required: [id, hausa, english, category, pronunciation]
+      properties:
+        id:
+          type: integer
+        hausa:
+          type: string
+        english:
+          type: string
+        category:
+          type: string
+        pronunciation:
+          type: string
+        example:
+          type: ["string", "null"]
+        exampleTranslation:
+          type: ["string", "null"]
