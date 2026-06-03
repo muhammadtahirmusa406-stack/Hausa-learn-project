@@ -10,6 +10,8 @@ import Learn from "@/pages/learn";
 import LessonFlow from "@/pages/lesson";
 import Vocabulary from "@/pages/vocabulary";
 import ProgressPage from "@/pages/progress";
+import AchievementsPage from "@/pages/achievements";
+import LeaderboardPage from "@/pages/leaderboard";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,8 @@ function Router() {
         <Route path="/lesson/:id" component={LessonFlow} />
         <Route path="/vocabulary" component={Vocabulary} />
         <Route path="/progress" component={ProgressPage} />
+        <Route path="/achievements" component={AchievementsPage} />
+        <Route path="/leaderboard" component={LeaderboardPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

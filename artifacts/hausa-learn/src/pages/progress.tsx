@@ -1,11 +1,14 @@
-import { useGetProgress, useGetActivityFeed } from "@workspace/api-client-react";
+import { useGetProgress, useGetActivityFeed, useGetAchievements } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Flame, Target, Zap } from "lucide-react";
+import { Trophy, Flame, Target, Zap, ChevronRight, Lock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function ProgressPage() {
   const { data: progress, isLoading: loadingProgress } = useGetProgress();
   const { data: activity, isLoading: loadingActivity } = useGetActivityFeed();
+  const { data: achievements, isLoading: loadingAchievements } = useGetAchievements();
 
   // Mock chart data for week, derived from weeklyXp for today, rest is mock since API only gives total weeklyXp
   const chartData = [
@@ -18,9 +21,12 @@ export default function ProgressPage() {
     { name: "Sun", xp: 0 },
   ];
 
-  if (loadingProgress) {
+  if (loadingProgress || loadingAchievements) {
     return <div className="min-h-screen p-8"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mt-20" /></div>;
   }
+  
+  const unlockedAchievements = achievements?.filter(a => a.unlockedAt) || [];
+  const recentAchievements = unlockedAchievements.slice(0, 4);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-8">
@@ -51,6 +57,44 @@ export default function ProgressPage() {
           <span className="text-sm font-medium text-muted-foreground">Longest Streak</span>
         </div>
       </div>
+      
+      {/* Achievements Preview */}
+      <Card className="border-2 border-border shadow-sm rounded-3xl overflow-hidden">
+        <CardHeader className="bg-muted/30 border-b border-border pb-4 flex flex-row items-center justify-between">
+          <CardTitle className="font-display font-bold text-xl">Recent Achievements</CardTitle>
+          <Link href="/achievements">
+            <Button variant="ghost" size="sm" className="h-8 gap-1 rounded-xl">
+              View All <ChevronRight className="w-4 h-4" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-6">
+          {recentAchievements.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {recentAchievements.map((achievement) => (
+                <div key={achievement.id} className="flex flex-col items-center text-center p-3 rounded-2xl bg-primary/5 border border-primary/20">
+                  <div className="w-12 h-12 rounded-xl bg-primary/20 text-primary flex items-center justify-center text-2xl mb-2">
+                    {achievement.iconEmoji || '🏆'}
+                  </div>
+                  <h4 className="font-bold text-sm line-clamp-1">{achievement.title}</h4>
+                  <span className="text-xs text-muted-foreground">+{achievement.xpReward} XP</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-muted flex items-center justify-center mb-3">
+                <Lock className="w-5 h-5" />
+              </div>
+              <p className="font-medium">No achievements yet</p>
+              <p className="text-sm mb-4">Complete lessons to earn badges!</p>
+              <Link href="/learn">
+                <Button size="sm">Start Learning</Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="border-2 border-border shadow-sm rounded-3xl overflow-hidden">
         <CardHeader className="bg-muted/30 border-b border-border pb-4">

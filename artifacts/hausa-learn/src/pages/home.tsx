@@ -1,13 +1,36 @@
-import { useGetProgress, useGetActivityFeed } from "@workspace/api-client-react";
+import { useGetProgress, useGetActivityFeed, useGetDailyChallenge, useCompleteDailyChallenge } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Flame, Play, Star, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Trophy, Flame, Play, Star, Clock, CheckCircle2, XCircle, Zap } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const { data: progress, isLoading: loadingProgress } = useGetProgress();
   const { data: activity, isLoading: loadingActivity } = useGetActivityFeed();
+  const { data: dailyChallenge, isLoading: loadingChallenge } = useGetDailyChallenge();
+  
+  const completeChallenge = useCompleteDailyChallenge();
+  
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showResult, setShowResult] = useState<{ isCorrect: boolean } | null>(null);
+
+  const handleAnswerSubmit = (answer: string) => {
+    if (showResult || dailyChallenge?.completed) return;
+    
+    setSelectedAnswer(answer);
+    
+    completeChallenge.mutate(
+      { data: { answer } },
+      {
+        onSuccess: (result) => {
+          setShowResult({ isCorrect: result.isCorrect });
+        }
+      }
+    );
+  };
 
   if (loadingProgress || loadingActivity) {
     return (
@@ -32,7 +55,7 @@ export default function Home() {
             Sannu da zuwa! 👋
           </h2>
           <p className="text-primary-foreground/80 mb-6 text-lg max-w-md">
-            Ready to continue your Hausa journey? You're on a {progress?.streak} day streak!
+            Ready to continue your Hausa journey? You're on a {progress?.streak || 0} day streak!
           </p>
           <Link href="/learn">
             <Button size="lg" variant="secondary" className="font-bold text-lg px-8 rounded-2xl shadow-sm hover:translate-y-[-2px] transition-transform">
@@ -42,6 +65,93 @@ export default function Home() {
           </Link>
         </div>
       </div>
+
+      {/* Daily Challenge */}
+      {!loadingChallenge && dailyChallenge && (
+        <Card className={`border-2 overflow-hidden shadow-sm relative ${dailyChallenge.completed || showResult?.isCorrect ? 'border-primary/50 bg-primary/5' : 'border-secondary/30 bg-secondary/5'}`}>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent" />
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="w-5 h-5 text-secondary fill-secondary" />
+              <h3 className="font-display font-bold text-lg">Daily Challenge</h3>
+              {(dailyChallenge.completed || showResult?.isCorrect) && (
+                <span className="ml-auto text-xs font-bold bg-primary/20 text-primary px-2 py-1 rounded-md flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Completed
+                </span>
+              )}
+            </div>
+
+            <p className="text-foreground font-medium mb-4 text-lg">
+              {dailyChallenge.question}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {dailyChallenge.options.map((option) => {
+                const isSelected = selectedAnswer === option;
+                const isCompleted = dailyChallenge.completed || showResult;
+                
+                let buttonStyle = "bg-background border-border hover:bg-muted";
+                
+                if (isCompleted && isSelected) {
+                  buttonStyle = showResult?.isCorrect || dailyChallenge.completed 
+                    ? "bg-primary/20 border-primary text-primary" 
+                    : "bg-destructive/20 border-destructive text-destructive";
+                } else if (isSelected) {
+                  buttonStyle = "bg-secondary/20 border-secondary text-secondary";
+                }
+
+                return (
+                  <Button
+                    key={option}
+                    variant="outline"
+                    className={`h-auto py-3 px-4 justify-start text-left border-2 transition-all ${buttonStyle} ${(dailyChallenge.completed || completeChallenge.isPending) ? 'opacity-80 pointer-events-none' : ''}`}
+                    onClick={() => handleAnswerSubmit(option)}
+                    disabled={!!dailyChallenge.completed || completeChallenge.isPending || !!showResult}
+                  >
+                    <span className="flex-1">{option}</span>
+                    <AnimatePresence>
+                      {isSelected && showResult && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="shrink-0 ml-2"
+                        >
+                          {showResult.isCorrect ? (
+                            <CheckCircle2 className="w-5 h-5 text-primary" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-destructive" />
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <AnimatePresence>
+              {showResult && !showResult.isCorrect && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }} 
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="mt-4 text-sm text-destructive font-medium bg-destructive/10 p-3 rounded-lg border border-destructive/20"
+                >
+                  Oops! That's incorrect. Try again tomorrow!
+                </motion.div>
+              )}
+              {showResult && showResult.isCorrect && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }} 
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="mt-4 text-sm text-primary font-medium bg-primary/10 p-3 rounded-lg border border-primary/20 flex items-center justify-between"
+                >
+                  <span>Excellent! You earned +{dailyChallenge.xpReward} XP.</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -90,7 +200,7 @@ export default function Home() {
               activity.slice(0, 5).map((item) => (
                 <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <Trophy className="w-5 h-5" />
+                    {item.type === 'achievement' ? <Trophy className="w-5 h-5" /> : <Star className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{item.description}</p>

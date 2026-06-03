@@ -6,17 +6,29 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './achievement';
 export * from './activityItem';
 export * from './answerInput';
 export * from './answerResult';
+export * from './authorizationSessionHeaderParameter';
+export * from './authUser';
+export * from './authUserEnvelope';
+export * from './beginBrowserLoginParams';
+export * from './dailyChallenge';
+export * from './errorEnvelope';
 export * from './exercise';
 export * from './exerciseType';
 export * from './getVocabularyParams';
+export * from './handleBrowserLoginCallbackParams';
 export * from './healthStatus';
+export * from './leaderboardEntry';
 export * from './lesson';
 export * from './lessonCategory';
 export * from './lessonCompleteInput';
 export * from './lessonCompleteResult';
 export * from './lessonDetail';
+export * from './logoutSuccess';
+export * from './mobileTokenExchangeRequest';
+export * from './mobileTokenExchangeSuccess';
 export * from './userProgress';
 export * from './vocabWord';

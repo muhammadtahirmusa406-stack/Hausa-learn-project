@@ -1,0 +1,1 @@
+- [Replit-Auth-Web Composite Lib](replit-auth-web-lib.md) — must be composite with source exports for Vite; dist exports break the app.

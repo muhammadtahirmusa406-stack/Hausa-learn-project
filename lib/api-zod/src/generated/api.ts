@@ -210,3 +210,143 @@ export const GetRandomVocabResponseItem = zod.object({
 export const GetRandomVocabResponse = zod.array(GetRandomVocabResponseItem)
 
 
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().email().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start the browser OIDC login flow
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+
+/**
+ * @summary Complete the browser OIDC login flow
+ */
+export const HandleBrowserLoginCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string().optional(),
+  "iss": zod.coerce.string().url().optional()
+})
+
+
+/**
+ * @summary Clear the session and begin OIDC logout
+ */
+export const LogoutBrowserSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+
+/**
+ * @summary Exchange a mobile OIDC code for a session token
+ */
+
+
+
+
+
+
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "code_verifier": zod.string().min(1),
+  "redirect_uri": zod.string().url().min(1),
+  "state": zod.string().min(1),
+  "nonce": zod.string().min(1).optional()
+})
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Delete a mobile session token
+ */
+export const LogoutMobileSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutMobileSessionResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get all achievements with unlock status
+ */
+export const GetAchievementsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "xpReward": zod.number(),
+  "isUnlocked": zod.boolean(),
+  "iconEmoji": zod.string(),
+  "unlockedAt": zod.string().nullish()
+})
+export const GetAchievementsResponse = zod.array(GetAchievementsResponseItem)
+
+
+/**
+ * @summary Get top users by XP
+ */
+export const GetLeaderboardResponseItem = zod.object({
+  "rank": zod.number(),
+  "userId": zod.string(),
+  "displayName": zod.string(),
+  "totalXp": zod.number(),
+  "streak": zod.number(),
+  "level": zod.number(),
+  "profileImageUrl": zod.string().nullish()
+})
+export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
+
+
+/**
+ * @summary Get today's daily challenge
+ */
+export const GetDailyChallengeResponse = zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "hausa": zod.string().nullish(),
+  "english": zod.string().nullish(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.string().nullish(),
+  "xpReward": zod.number(),
+  "isCompleted": zod.boolean(),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Submit answer for daily challenge
+ */
+export const CompleteDailyChallengeBody = zod.object({
+  "answer": zod.string()
+})
+
+export const CompleteDailyChallengeResponse = zod.object({
+  "isCorrect": zod.boolean(),
+  "correctAnswer": zod.string(),
+  "explanation": zod.string().nullish()
+})
+
+

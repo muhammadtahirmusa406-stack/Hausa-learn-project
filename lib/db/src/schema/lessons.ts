@@ -29,6 +29,7 @@ export const exercisesTable = pgTable("exercises", {
 
 export const lessonCompletionsTable = pgTable("lesson_completions", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   lessonId: integer("lesson_id").notNull().references(() => lessonsTable.id),
   score: integer("score").notNull(),
   xpEarned: integer("xp_earned").notNull(),
@@ -37,6 +38,7 @@ export const lessonCompletionsTable = pgTable("lesson_completions", {
 
 export const userProgressTable = pgTable("user_progress", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   totalXp: integer("total_xp").notNull().default(0),
   streak: integer("streak").notNull().default(0),
   longestStreak: integer("longest_streak").notNull().default(0),
@@ -48,6 +50,7 @@ export const userProgressTable = pgTable("user_progress", {
 
 export const activityFeedTable = pgTable("activity_feed", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   type: text("type").notNull(),
   description: text("description").notNull(),
   xp: integer("xp").notNull().default(0),
