@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!--
+    quiz.html — The quiz question page
+    
+    Python passes these variables to this template:
+    - question        → the current question dict
+    - question_number → e.g. 3
+    - total_questions → e.g. 10
+    - score           → correct answers so far
+    - progress        → 0–100 for the progress bar
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hausa Quiz - Question {{ question_number }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="page">
+        <div class="card">
+
+            <!-- Progress bar -->
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ progress }}%"></div>
+            </div>
+
+            <!-- Counter and score -->
+            <p class="counter">Question {{ question_number }} of {{ total_questions }}</p>
+            <p class="score-label">Score: {{ score }} ✓</p>
+
+            <!-- The question text (from our Python questions list) -->
+            <h2 class="question">{{ question.question }}</h2>
+
+            <!--
+                FORM — sends the user's answer back to /quiz via POST
+                method="POST" means the data is sent securely
+                action="/quiz" means it goes to the quiz route
+            -->
+            <form method="POST" action="/quiz">
+                <div class="option-list">
+                    <!--
+                        Loop through the 4 options for this question.
+                        {{ question.options }} is a Python list.
+                    -->
+                    {% for option in question.options %}
+                    <button type="submit" name="answer" value="{{ option }}" class="option">
+                        {{ option }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</body>
+</html>

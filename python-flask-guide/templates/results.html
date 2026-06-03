@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!--
+    results.html — The results page
+    
+    Python passes these variables:
+    - score      → number of correct answers (e.g. 7)
+    - total      → total questions (e.g. 10)
+    - percentage → e.g. 70
+    - message    → e.g. "Good Job! 👍"
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hausa Quiz - Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="page">
+        <div class="card" style="text-align: center;">
+
+            <!-- Big percentage circle -->
+            <div class="score-circle">
+                <div class="score-number">{{ percentage }}%</div>
+                <div>Score</div>
+            </div>
+
+            <!-- Dynamic message from Python -->
+            <h2>{{ message }}</h2>
+
+            <!-- Score breakdown -->
+            <p>You got <strong>{{ score }}</strong> out of <strong>{{ total }}</strong> correct.</p>
+
+            <!-- Stats row -->
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-number" style="color: #1a7f4b;">{{ score }}</div>
+                    <div>Correct</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" style="color: #dc2626;">{{ total - score }}</div>
+                    <div>Wrong</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" style="color: #555;">{{ total }}</div>
+                    <div>Total</div>
+                </div>
+            </div>
+
+            <!--
+                Conditional styling — Jinja2 if statement
+                {% if percentage >= 80 %}...{% else %}...{% endif %}
+            -->
+            {% if percentage >= 80 %}
+            <div class="feedback-box success">
+                🎉 Amazing! You really know your Hausa!
+            </div>
+            {% elif percentage >= 50 %}
+            <div class="feedback-box warning">
+                📚 Good effort! Keep studying and you'll get there.
+            </div>
+            {% else %}
+            <div class="feedback-box error">
+                💪 Keep practicing — every attempt makes you better!
+            </div>
+            {% endif %}
+
+            <!-- Restart button — links to /restart route -->
+            <a href="/restart" class="button" style="display: block; margin-top: 16px;">
+                🔄 Try Again
+            </a>
+
+            <a href="/" class="button" style="display: block; margin-top: 8px; background: #555;">
+                🏠 Home
+            </a>
+
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/flask-guide/"
+title = "Python Flask Learning Guide"
+version = "1.0.0"
+id = "artifacts/flask-guide"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/flask-guide/" ]
+localPort = 19284
+
+[services.development]
+run = "pnpm --filter @workspace/flask-guide run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/flask-guide", "run", "build" ]
+publicDir = "artifacts/flask-guide/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19284"
+BASE_PATH = "/flask-guide/"

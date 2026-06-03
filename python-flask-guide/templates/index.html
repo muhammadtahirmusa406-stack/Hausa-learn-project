@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+    index.html — The home page template
+    
+    Flask uses "Jinja2" templating — you can write Python-like code
+    inside {{ }} and {% %} tags directly in your HTML.
+    
+    {{ variable }}     → prints a value
+    {% if condition %} → an if statement
+    {% for x in y %}   → a loop
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hausa Quiz - Home</title>
+    <!-- Link to your CSS file (in the static/ folder) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="page">
+        <div class="card">
+            <!-- Static content — same for everyone -->
+            <div class="emoji">🇳🇬</div>
+            <h1>Hausa Language Quiz</h1>
+            <p class="subtitle">
+                Test your Hausa vocabulary!<br>
+                <strong>10 questions · Multiple choice · Instant feedback</strong>
+            </p>
+
+            <!-- Button links to the /quiz route -->
+            <a href="/quiz" class="button">▶ Start Quiz</a>
+        </div>
+
+        <!-- Top Scores section — data comes from the database via Python -->
+        {% if top_scores %}
+        <div class="card" style="margin-top: 20px; max-width: 400px;">
+            <h3>🏆 Top Scores</h3>
+            <table class="scores-table">
+                <tr>
+                    <th>Score</th>
+                    <th>Percentage</th>
+                    <th>Date</th>
+                </tr>
+                <!-- Loop through the scores list that Python passed in -->
+                {% for score_row in top_scores %}
+                <tr>
+                    <td>{{ score_row[0] }}/{{ score_row[1] }}</td>
+                    <td>{{ score_row[2] }}%</td>
+                    <td>{{ score_row[3] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
