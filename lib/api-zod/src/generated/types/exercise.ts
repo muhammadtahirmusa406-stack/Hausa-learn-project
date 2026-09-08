@@ -22,4 +22,6 @@ export interface Exercise {
   hint?: string | null;
   /** @nullable */
   audioWord?: string | null;
+  /** @nullable */
+  retryType?: string | null;
 }

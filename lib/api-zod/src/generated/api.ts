@@ -113,15 +113,20 @@ export const GetLessonResponse = zod.object({
   "exercises": zod.array(zod.object({
   "id": zod.number(),
   "lessonId": zod.number(),
-  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair', 'typing']),
+  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair', 'typing', 'listening', 'word_ordering']),
   "question": zod.string(),
   "hausa": zod.string().nullish(),
   "english": zod.string().nullish(),
   "options": zod.array(zod.string()),
   "order": zod.number(),
   "hint": zod.string().nullish(),
-  "audioWord": zod.string().nullish()
-}))
+  "audioWord": zod.string().nullish(),
+  "retryType": zod.string().nullish()
+})),
+  "currentLives": zod.number(),
+  "maxLives": zod.number(),
+  "nextLifeAt": zod.coerce.date().nullish(),
+  "retryExerciseIds": zod.array(zod.number())
 })
 
 
@@ -157,14 +162,15 @@ export const GetExercisesParams = zod.object({
 export const GetExercisesResponseItem = zod.object({
   "id": zod.number(),
   "lessonId": zod.number(),
-  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair', 'typing']),
+  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair', 'typing', 'listening', 'word_ordering']),
   "question": zod.string(),
   "hausa": zod.string().nullish(),
   "english": zod.string().nullish(),
   "options": zod.array(zod.string()),
   "order": zod.number(),
   "hint": zod.string().nullish(),
-  "audioWord": zod.string().nullish()
+  "audioWord": zod.string().nullish(),
+  "retryType": zod.string().nullish()
 })
 export const GetExercisesResponse = zod.array(GetExercisesResponseItem)
 
@@ -183,7 +189,10 @@ export const SubmitAnswerBody = zod.object({
 export const SubmitAnswerResponse = zod.object({
   "isCorrect": zod.boolean(),
   "correctAnswer": zod.string(),
-  "explanation": zod.string().nullish()
+  "explanation": zod.string().nullish(),
+  "livesRemaining": zod.number(),
+  "retryQueued": zod.boolean(),
+  "nextLifeAt": zod.coerce.date().nullish()
 })
 
 
@@ -197,6 +206,9 @@ export const GetProgressResponse = zod.object({
   "totalLessons": zod.number(),
   "level": zod.number(),
   "weeklyXp": zod.number(),
+  "currentLives": zod.number(),
+  "maxLives": zod.number(),
+  "nextLifeAt": zod.coerce.date().nullish(),
   "longestStreak": zod.number().optional(),
   "dailyGoalXp": zod.number().optional(),
   "dailyGoalCompleted": zod.boolean().optional()
@@ -401,7 +413,10 @@ export const CompleteDailyChallengeBody = zod.object({
 export const CompleteDailyChallengeResponse = zod.object({
   "isCorrect": zod.boolean(),
   "correctAnswer": zod.string(),
-  "explanation": zod.string().nullish()
+  "explanation": zod.string().nullish(),
+  "livesRemaining": zod.number(),
+  "retryQueued": zod.boolean(),
+  "nextLifeAt": zod.coerce.date().nullish()
 })
 
 

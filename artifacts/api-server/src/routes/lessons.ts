@@ -8,13 +8,20 @@ import {
   userProgressTable,
   activityFeedTable,
   userUnitUnlocksTable,
+  lessonRetryQueueTable,
 } from "@workspace/db";
-import { eq, asc, sql, and, isNull } from "drizzle-orm";
+import { eq, asc, sql, and, isNull, desc } from "drizzle-orm";
 import {
   CompleteLessonBody,
   CompleteLessonParams,
   GetLessonParams,
 } from "@workspace/api-zod";
+import {
+  ensureProgress,
+  nextLifeAt,
+  recordQualifyingActivity,
+  refreshLives,
+} from "../lib/learning-state";
 
 const router = Router();
 
@@ -28,6 +35,10 @@ function progressFilter(userId: string | null) {
 
 function unlockFilter(userId: string | null) {
   return userId ? eq(userUnitUnlocksTable.userId, userId) : isNull(userUnitUnlocksTable.userId);
+}
+
+function retryFilter(userId: string | null) {
+  return userId ? eq(lessonRetryQueueTable.userId, userId) : isNull(lessonRetryQueueTable.userId);
 }
 
 /** For a given lesson order index, determine if it's unlocked based on unit progression */
@@ -146,15 +157,26 @@ router.get("/lessons/:id", async (req, res) => {
     const allLessons = await db.select().from(lessonsTable).orderBy(asc(lessonsTable.order));
     const allCompletions = await db.select().from(lessonCompletionsTable).where(userFilter(userId));
     const manualUnlocks = await db.select().from(userUnitUnlocksTable).where(unlockFilter(userId));
+    const progress = await refreshLives(await ensureProgress(userId));
+    const retryRows = await db
+      .select()
+      .from(lessonRetryQueueTable)
+      .where(and(retryFilter(userId), eq(lessonRetryQueueTable.lessonId, parsed.data.id)))
+      .orderBy(desc(lessonRetryQueueTable.createdAt));
     const completedIds = new Set(allCompletions.map((c) => c.lessonId));
     const manuallyUnlockedUnitIds = new Set(manualUnlocks.map((u) => u.unitId));
     const lessonIndex = allLessons.findIndex((l) => l.id === parsed.data.id);
+    const retryMap = new Map(retryRows.map((row) => [row.exerciseId, row]));
 
     res.json({
       ...lesson[0],
       isCompleted: completedIds.has(parsed.data.id),
       isUnlocked: computeIsUnlocked(lessonIndex, allLessons, completedIds, manuallyUnlockedUnitIds),
       exerciseCount: exercises.length,
+      currentLives: progress.currentLives,
+      maxLives: progress.maxLives,
+      nextLifeAt: nextLifeAt(progress)?.toISOString() ?? null,
+      retryExerciseIds: retryRows.map((row) => row.exerciseId),
       exercises: exercises.map((e) => ({
         id: e.id,
         lessonId: e.lessonId,
@@ -166,6 +188,7 @@ router.get("/lessons/:id", async (req, res) => {
         order: e.order,
         hint: e.hint ?? null,
         audioWord: e.audioWord ?? null,
+        retryType: retryMap.get(e.id)?.retryType ?? null,
       })),
     });
   } catch (err) {
@@ -185,46 +208,37 @@ router.post("/lessons/:id/complete", async (req, res) => {
     if (!lesson.length) return void res.status(404).json({ error: "Lesson not found" });
 
     const xpEarned = lesson[0].xpReward;
+    const existingCompletion = await db
+      .select()
+      .from(lessonCompletionsTable)
+      .where(and(userFilter(userId), eq(lessonCompletionsTable.lessonId, params.data.id)))
+      .limit(1);
+    const progress = await refreshLives(await ensureProgress(userId));
 
-    await db.insert(lessonCompletionsTable).values({ lessonId: params.data.id, userId, score: body.data.score, xpEarned });
-
-    let progress = await db.select().from(userProgressTable).where(progressFilter(userId)).limit(1);
-
-    if (!progress.length) {
-      await db.insert(userProgressTable).values({ userId, totalXp: xpEarned, streak: 1, longestStreak: 1, level: 1, weeklyXp: xpEarned, dailyXp: xpEarned, dailyGoalXp: 50, lastActivityAt: new Date() });
-      progress = await db.select().from(userProgressTable).where(progressFilter(userId)).limit(1);
-    } else {
-      const cur = progress[0];
-      const newXp = cur.totalXp + xpEarned;
-      const newStreak = cur.streak + 1;
-      const newLongest = Math.max(cur.longestStreak, newStreak);
-      const newLevel = Math.floor(newXp / 100) + 1;
-      await db
-        .update(userProgressTable)
-        .set({
-          totalXp: newXp,
-          weeklyXp: cur.weeklyXp + xpEarned,
-          dailyXp: (cur.dailyXp ?? 0) + xpEarned,
-          streak: newStreak,
-          longestStreak: newLongest,
-          level: newLevel,
-          lastActivityAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(userProgressTable.id, cur.id));
-      progress = await db.select().from(userProgressTable).where(progressFilter(userId)).limit(1);
+    if (existingCompletion.length) {
+      return void res.json({
+        xpEarned: 0,
+        totalXp: progress.totalXp,
+        streak: progress.streak,
+        isNewBest: progress.streak === progress.longestStreak,
+        message: "This lesson was already completed. Your saved progress is safe.",
+        newAchievements: [],
+      });
     }
 
+    await db.insert(lessonCompletionsTable).values({ lessonId: params.data.id, userId, score: body.data.score, xpEarned });
+    const totals = await recordQualifyingActivity(progress, xpEarned);
+    await db.delete(lessonRetryQueueTable)
+      .where(and(retryFilter(userId), eq(lessonRetryQueueTable.lessonId, params.data.id)));
     await db.insert(activityFeedTable).values({ userId, type: "lesson_complete", description: `Completed "${lesson[0].title}"`, xp: xpEarned });
 
-    const cur = progress[0];
-    const isPerfect = body.data.score === (body.data as { score: number; totalQuestions?: number }).totalQuestions;
+    const isPerfect = body.data.totalQuestions != null && body.data.score === body.data.totalQuestions;
 
     res.json({
       xpEarned,
-      totalXp: cur.totalXp,
-      streak: cur.streak,
-      isNewBest: cur.streak === cur.longestStreak,
+      totalXp: totals.totalXp,
+      streak: totals.streak,
+      isNewBest: totals.streak === totals.longestStreak,
       message: isPerfect ? `Perfect score! You earned ${xpEarned} XP!` : `Great job! You earned ${xpEarned} XP!`,
       newAchievements: [],
     });

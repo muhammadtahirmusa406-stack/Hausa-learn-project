@@ -11,4 +11,8 @@ export interface AnswerResult {
   correctAnswer: string;
   /** @nullable */
   explanation?: string | null;
+  livesRemaining: number;
+  retryQueued: boolean;
+  /** @nullable */
+  nextLifeAt?: Date | null;
 }

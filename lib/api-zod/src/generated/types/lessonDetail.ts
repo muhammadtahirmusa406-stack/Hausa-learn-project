@@ -22,4 +22,9 @@ export interface LessonDetail {
   /** @nullable */
   unitId?: number | null;
   exercises: Exercise[];
+  currentLives: number;
+  maxLives: number;
+  /** @nullable */
+  nextLifeAt?: Date | null;
+  retryExerciseIds: number[];
 }

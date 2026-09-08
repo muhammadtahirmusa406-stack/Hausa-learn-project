@@ -545,7 +545,7 @@ components:
 
     LessonDetail:
       type: object
-      required: [id, title, description, category, xpReward, order, isUnlocked, isCompleted, exerciseCount, exercises]
+      required: [id, title, description, category, xpReward, order, isUnlocked, isCompleted, exerciseCount, exercises, currentLives, maxLives, retryExerciseIds]
       properties:
         id:
           type: integer
@@ -573,6 +573,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Exercise"
+        currentLives:
+          type: integer
+        maxLives:
+          type: integer
+        nextLifeAt:
+          type: ["string", "null"]
+          format: date-time
+        retryExerciseIds:
+          type: array
+          items:
+            type: integer
 
     Exercise:
       type: object
@@ -584,7 +595,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [multiple_choice, translation, fill_blank, match_pair, typing]
+          enum: [multiple_choice, translation, fill_blank, match_pair, typing, listening, word_ordering]
         question:
           type: string
         hausa:
@@ -600,6 +611,8 @@ components:
         hint:
           type: ["string", "null"]
         audioWord:
+          type: ["string", "null"]
+        retryType:
           type: ["string", "null"]
 
     LessonCompleteInput:
@@ -640,7 +653,7 @@ components:
 
     AnswerResult:
       type: object
-      required: [isCorrect, correctAnswer]
+      required: [isCorrect, correctAnswer, livesRemaining, retryQueued]
       properties:
         isCorrect:
           type: boolean
@@ -648,10 +661,17 @@ components:
           type: string
         explanation:
           type: ["string", "null"]
+        livesRemaining:
+          type: integer
+        retryQueued:
+          type: boolean
+        nextLifeAt:
+          type: ["string", "null"]
+          format: date-time
 
     UserProgress:
       type: object
-      required: [totalXp, streak, completedLessons, totalLessons, level, weeklyXp]
+      required: [totalXp, streak, completedLessons, totalLessons, level, weeklyXp, currentLives, maxLives]
       properties:
         totalXp:
           type: integer
@@ -665,6 +685,13 @@ components:
           type: integer
         weeklyXp:
           type: integer
+        currentLives:
+          type: integer
+        maxLives:
+          type: integer
+        nextLifeAt:
+          type: ["string", "null"]
+          format: date-time
         longestStreak:
           type: integer
         dailyGoalXp:

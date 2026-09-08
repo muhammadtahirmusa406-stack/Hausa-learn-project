@@ -13,6 +13,10 @@ export interface UserProgress {
   totalLessons: number;
   level: number;
   weeklyXp: number;
+  currentLives: number;
+  maxLives: number;
+  /** @nullable */
+  nextLifeAt?: Date | null;
   longestStreak?: number;
   dailyGoalXp?: number;
   dailyGoalCompleted?: boolean;

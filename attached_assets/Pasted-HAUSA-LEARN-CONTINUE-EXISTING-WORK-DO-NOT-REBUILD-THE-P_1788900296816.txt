@@ -1,0 +1,85 @@
+HAUSA LEARN — CONTINUE EXISTING WORK
+
+DO NOT REBUILD THE PROJECT.
+
+First, continue from exactly where the previous session stopped:
+
+“Design subagent is done. Let me check the app visually and look for any console errors.”
+
+STEP 1 — FINISH OUTSTANDING WORK
+Inspect the current project and finish everything left from the previous session.
+Check the running app for UI, console, API, database, and TypeScript/runtime errors.
+Verify the existing 6 units, 22 lessons, and 330 exercises work correctly.
+Finish the README, LICENSE, contribution guide, and deployment setup if incomplete.
+Fix all discovered issues before adding new features.
+Preserve all existing working features and user data.
+STEP 2 — IMPLEMENT THESE IMPROVEMENTS
+
+Lessons & Quizzes
+
+Keep/improve the 6 units: Basics, Greetings, Numbers, Colors, Food & Drinks, Family.
+Each unit: 3–5 lessons.
+Each quiz: 15+ questions.
+Mix multiple choice, translation, fill-in-the-blank, typing, listening, and word ordering.
+
+Wrong Answers + Lives
+
+Start with 5 ❤️ lives.
+Wrong answer = lose 1 life and put the question in a retry queue.
+Do NOT immediately repeat it.
+Bring difficult questions back later, preferably in a different format.
+Keep retrying until correctly answered.
+At 0 lives, pause the lesson and allow the learner to practice later or restore lives using virtual XRP if already implemented.
+Never delete XP, progress, streak, or completed lessons.
+
+Progression
+
+Lock advanced units until earlier units are completed.
+Add checkpoints that allow learners to test out of earlier content.
+Add progress bars, XP, levels, trophies, achievements, daily goals, and leaderboard.
+
+🔥 Streak
+
+Streak requires meaningful learning activity.
+Simply opening the app does not count.
+Break the streak after 24 hours without qualifying practice.
+Show streak clearly on the dashboard.
+
+Hausa Accuracy
+
+Correct all Hausa spelling, grammar, translations, and vocabulary.
+Pay special attention to ƙ, ɗ, ɓ and proper Hausa orthography.
+Use reliable Hausa language references and mark uncertain content for review instead of guessing.
+Accuracy is more important than quantity.
+
+Audio
+
+Add proper Hausa-capable audio/TTS or licensed Hausa recordings.
+Do not use an English voice pretending to speak Hausa.
+Keep audio modular so the provider can be changed later.
+
+UI
+
+Improve the existing UI with rounded buttons, clean cards, Hausa cultural accents, and icons.
+Keep the existing design where it works.
+Add an original animated mascot and subtle animations.
+Add working dark/light mode.
+Make everything mobile-friendly.
+Do not copy Duolingo branding, artwork, or mascot.
+
+Technical
+
+Keep lessons/quizzes easy to edit through JSON/content files where practical.
+Store learner progress, XP, lives, streaks, scores, and retry queues in the database.
+Keep DATABASE_URL, SESSION_SECRET, and all secrets protected.
+Add proper error handling and fast navigation.
+Do not lose existing database data.
+FINAL CHECK
+
+After implementation, test the complete flow:
+
+Dashboard → Unit → Lesson → Quiz → Mistakes → Retry → Lives → Results → Progress
+
+Fix every major error you find.
+
+Most important: finish the outstanding work first, build on the existing project, and do not start over.

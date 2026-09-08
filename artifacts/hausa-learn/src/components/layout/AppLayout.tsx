@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetProgress } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { Home, BookOpen, BookA, Trophy, Flame, Medal, LogOut, User as UserIcon, Sun, Moon } from "lucide-react";
+import { Home, BookOpen, BookA, Trophy, Flame, Heart, Medal, LogOut, User as UserIcon, Sun, Moon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -113,6 +113,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-1.5 font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
               <Trophy className="w-4 h-4 fill-primary/20" />
               <span><AnimatedCounter value={progress?.totalXp || 0} duration={1000} /> XP</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 font-bold text-destructive bg-destructive/10 px-3 py-1.5 rounded-full" aria-label={`${progress?.currentLives ?? 5} lives remaining`}>
+              <Heart className="w-4 h-4 fill-destructive" />
+              <span>{progress?.currentLives ?? 5}/{progress?.maxLives ?? 5}</span>
             </div>
             
             {/* Mobile Actions */}

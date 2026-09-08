@@ -60,6 +60,8 @@ export const ExerciseType = {
   fill_blank: 'fill_blank',
   match_pair: 'match_pair',
   typing: 'typing',
+  listening: 'listening',
+  word_ordering: 'word_ordering',
 } as const;
 
 export interface Exercise {
@@ -77,6 +79,8 @@ export interface Exercise {
   hint?: string | null;
   /** @nullable */
   audioWord?: string | null;
+  /** @nullable */
+  retryType?: string | null;
 }
 
 export interface LessonDetail {
@@ -94,6 +98,11 @@ export interface LessonDetail {
   /** @nullable */
   unitId?: number | null;
   exercises: Exercise[];
+  currentLives: number;
+  maxLives: number;
+  /** @nullable */
+  nextLifeAt?: string | null;
+  retryExerciseIds: number[];
 }
 
 export interface LessonCompleteInput {
@@ -121,6 +130,10 @@ export interface AnswerResult {
   correctAnswer: string;
   /** @nullable */
   explanation?: string | null;
+  livesRemaining: number;
+  retryQueued: boolean;
+  /** @nullable */
+  nextLifeAt?: string | null;
 }
 
 export interface UserProgress {
@@ -130,6 +143,10 @@ export interface UserProgress {
   totalLessons: number;
   level: number;
   weeklyXp: number;
+  currentLives: number;
+  maxLives: number;
+  /** @nullable */
+  nextLifeAt?: string | null;
   longestStreak?: number;
   dailyGoalXp?: number;
   dailyGoalCompleted?: boolean;

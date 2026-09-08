@@ -3,24 +3,28 @@ import { useGetVocabulary } from "@workspace/api-client-react";
 import { Volume2, Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { speakHausa } from "@/lib/hausa-audio";
 
 const CATEGORIES = ["All", "Basics", "Greetings", "Numbers", "Colors", "Food", "Family"];
 
 export default function Vocabulary() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
   
   const { data: vocab, isLoading } = useGetVocabulary({ 
     category: activeCategory === "All" ? undefined : activeCategory 
   });
 
   const speak = (text: string) => {
-    if (!window.speechSynthesis) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-NG';
-    utterance.rate = 0.85;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    if (!speakHausa(text)) {
+      toast({
+        title: "Hausa audio unavailable",
+        description: "This browser does not provide a Hausa-capable voice. No English voice was used as a substitute.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredVocab = vocab?.filter(word => 

@@ -34,7 +34,7 @@ export const lessonsTable = pgTable("lessons", {
 export const exercisesTable = pgTable("exercises", {
   id: serial("id").primaryKey(),
   lessonId: integer("lesson_id").notNull().references(() => lessonsTable.id),
-  type: text("type").notNull(), // multiple_choice | translation | fill_blank | match_pair | typing
+  type: text("type").notNull(), // multiple_choice | translation | fill_blank | match_pair | typing | listening | word_ordering
   question: text("question").notNull(),
   hausa: text("hausa"),
   english: text("english"),
@@ -44,6 +44,22 @@ export const exercisesTable = pgTable("exercises", {
   explanation: text("explanation"),
   audioWord: text("audio_word"),
   order: integer("order").notNull(),
+});
+
+/**
+ * Missed questions are kept server-side so a learner can leave a lesson and
+ * return to the same retry queue later. A row is removed only after a correct
+ * answer.
+ */
+export const lessonRetryQueueTable = pgTable("lesson_retry_queue", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  lessonId: integer("lesson_id").notNull().references(() => lessonsTable.id),
+  exerciseId: integer("exercise_id").notNull().references(() => exercisesTable.id),
+  attempts: integer("attempts").notNull().default(1),
+  retryType: text("retry_type"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const lessonCompletionsTable = pgTable("lesson_completions", {
@@ -65,6 +81,9 @@ export const userProgressTable = pgTable("user_progress", {
   weeklyXp: integer("weekly_xp").notNull().default(0),
   dailyXp: integer("daily_xp").notNull().default(0),
   dailyGoalXp: integer("daily_goal_xp").notNull().default(50),
+  currentLives: integer("current_lives").notNull().default(5),
+  maxLives: integer("max_lives").notNull().default(5),
+  livesRestoredAt: timestamp("lives_restored_at"),
   lastActivityAt: timestamp("last_activity_at"),
   lastDailyReset: timestamp("last_daily_reset"),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -100,3 +119,4 @@ export type UserProgress = typeof userProgressTable.$inferSelect;
 export type ActivityFeed = typeof activityFeedTable.$inferSelect;
 export type VocabWord = typeof vocabularyTable.$inferSelect;
 export type Unit = typeof unitsTable.$inferSelect;
+export type LessonRetry = typeof lessonRetryQueueTable.$inferSelect;

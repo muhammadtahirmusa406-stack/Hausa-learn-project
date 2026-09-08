@@ -59,10 +59,11 @@ const LESSONS = [
 ];
 
 // ─── EXERCISES (lessonIndex 0-based, maps to LESSONS array) ──────────────────
-// Each lesson gets 15 exercises mixing multiple_choice, translation, fill_blank, typing
+// Each lesson gets at least 15 exercises mixing multiple_choice, translation,
+// fill_blank, typing, listening, and word_ordering.
 type ExDef = {
   lessonIndex: number;
-  type: "multiple_choice" | "translation" | "fill_blank" | "typing";
+  type: "multiple_choice" | "translation" | "fill_blank" | "typing" | "listening" | "word_ordering";
   question: string;
   hausa?: string;
   english?: string;
@@ -91,6 +92,8 @@ const EXERCISES: ExDef[] = [
   { lessonIndex: 0, type: "multiple_choice", question: "Which vowel is NOT in Hausa?", options: ["a", "e", "o", "ü"], correctAnswer: "ü", explanation: "Hausa vowels are a, e, i, o, u — no umlauts.", order: 13 },
   { lessonIndex: 0, type: "typing", question: "Type the Hausa word for 'house'", options: [], correctAnswer: "gida", hint: "Sounds like 'gee-dah'", order: 14 },
   { lessonIndex: 0, type: "multiple_choice", question: "In Hausa, long vowels are written as:", options: ["With an accent mark", "Double letters (aa, ii, uu)", "Capital letters", "With a macron"], correctAnswer: "Double letters (aa, ii, uu)", explanation: "Hausa long vowels are represented by doubling the vowel letter.", order: 15 },
+  { lessonIndex: 0, type: "listening", question: "Listen and type the Hausa word you hear for water.", hausa: "Ruwa", english: "Water", options: [], correctAnswer: "ruwa", audioWord: "Ruwa", order: 16 },
+  { lessonIndex: 0, type: "word_ordering", question: "Arrange the words to say: 'I want water'.", options: ["ruwa", "Ina", "son"], correctAnswer: "Ina son ruwa", order: 17 },
 
   // ── Lesson 1: Essential Words ───────────────────────────────────────────────
   { lessonIndex: 1, type: "translation", question: "What does 'Sannu' mean?", hausa: "Sannu", english: "Hello / Greetings", options: ["Goodbye", "Hello / Greetings", "Thank you", "Sorry"], correctAnswer: "Hello / Greetings", audioWord: "Sannu", order: 1 },

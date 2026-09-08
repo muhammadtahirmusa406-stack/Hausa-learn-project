@@ -12,8 +12,9 @@
 
 - **6 Full Units** — Basics → Greetings → Numbers & Time → Colors & Objects → Food & Drinks → Family & Home
 - **22 Lessons** with 15+ exercises each (330+ total exercises)
-- **Mixed exercise formats** — Multiple choice, translation, fill-in-the-blank, and typing
-- **Audio playback** — Web Speech API speaks Hausa words aloud
+- **Mixed exercise formats** — Multiple choice, translation, fill-in-the-blank, typing, listening, and word ordering
+- **Persistent practice safety net** — Five lives per lesson attempt, server-side retry queues, alternate retry formats, and timed life restoration
+- **Audio playback** — Uses only an explicitly Hausa-capable browser voice; otherwise the app clearly reports that audio is unavailable
 - **Unit locking with checkpoints** — Complete units to unlock the next, or skip ahead via a checkpoint
 - **XP & Streaks** — Earn XP per lesson, maintain daily streaks, level up
 - **Leaderboard** — Compete with other learners
@@ -119,12 +120,13 @@ The database auto-seeds on first startup with:
 
 - 6 units with progressive locking
 - 22 lessons across all units
-- 330+ exercises (multiple choice, translation, fill-in-the-blank, typing)
+ - 330+ exercises across multiple choice, translation, fill-in-the-blank, typing, listening, and word ordering formats
+- Persistent learner lives and missed-question retry queues
 - 35 vocabulary words with pronunciations and example sentences
 - 15 achievements
 - 15 daily challenges
 
-To reset and re-seed, drop the `units` table and restart the API server.
+The seed runs only when the `units` table is empty. Do not drop tables in a shared environment: existing XP, progress, streaks, completions, lives, and retry queues must be preserved.
 
 ---
 
@@ -155,11 +157,11 @@ The API server builds to a single ESM bundle (`dist/index.mjs`). Point Railway/R
 
 ## Adding New Content
 
-All lesson content lives in `artifacts/api-server/src/lib/seed.ts`. To add a new lesson:
+Lesson content currently lives in `artifacts/api-server/src/lib/seed.ts` and is designed to move cleanly into JSON/content files as the course expands. To add a new lesson:
 
 1. Add an entry to the `LESSONS` array with the right `unitIndex`
 2. Add exercises to the `EXERCISES` array referencing the new `lessonIndex`
-3. Drop the `units` table and restart — the seed will repopulate
+3. Run the API against an empty development database, or add a separate content migration; never delete learner data to refresh content
 
 ---
 

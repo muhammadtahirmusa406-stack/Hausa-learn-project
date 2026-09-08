@@ -15,4 +15,6 @@ export const ExerciseType = {
   fill_blank: 'fill_blank',
   match_pair: 'match_pair',
   typing: 'typing',
+  listening: 'listening',
+  word_ordering: 'word_ordering',
 } as const;

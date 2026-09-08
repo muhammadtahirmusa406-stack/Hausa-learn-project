@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import { SubmitAnswerBody } from "@workspace/api-zod";
+import { ensureProgress, recordQualifyingActivity, refreshLives } from "../lib/learning-state";
 
 const router = Router();
 
@@ -146,25 +147,31 @@ router.post("/daily-challenge/complete", async (req, res) => {
     ch.correctAnswer.trim().toLowerCase();
 
   if (isCorrect) {
+    const previousCompletion = await db
+      .select()
+      .from(dailyChallengeCompletionsTable)
+      .where(
+        userId
+          ? eq(dailyChallengeCompletionsTable.userId, userId)
+          : sql`1=0`
+      );
+    if (previousCompletion.some((completion) => completion.challengeId === ch.id)) {
+      return void res.json({
+        isCorrect: true,
+        correctAnswer: ch.correctAnswer,
+        explanation: "You already completed today's challenge.",
+        livesRemaining: 0,
+        retryQueued: false,
+      });
+    }
+
     await db.insert(dailyChallengeCompletionsTable).values({
       challengeId: ch.id,
       userId,
     });
 
-    const progress = await db.select().from(userProgressTable).where(
-      userId ? eq(userProgressTable.userId, userId) : sql`"user_id" IS NULL`
-    ).limit(1);
-
-    if (progress.length) {
-      await db
-        .update(userProgressTable)
-        .set({
-          totalXp: progress[0].totalXp + ch.xpReward,
-          weeklyXp: progress[0].weeklyXp + ch.xpReward,
-          updatedAt: new Date(),
-        })
-        .where(eq(userProgressTable.id, progress[0].id));
-    }
+    const progress = await refreshLives(await ensureProgress(userId));
+    await recordQualifyingActivity(progress, ch.xpReward);
 
     await db.insert(activityFeedTable).values({
       type: "daily_challenge",

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { userProgressTable, lessonsTable, lessonCompletionsTable, activityFeedTable } from "@workspace/db";
 import { desc, eq, isNull, gte, and } from "drizzle-orm";
+import { ensureProgress, nextLifeAt, refreshLives } from "../lib/learning-state";
 
 const router = Router();
 
@@ -20,12 +21,7 @@ function activityFilter(userId: string | null) {
 router.get("/progress", async (req, res) => {
   try {
     const userId = req.isAuthenticated() ? req.user.id : null;
-    let progress = await db.select().from(userProgressTable).where(progressFilter(userId)).limit(1);
-
-    if (!progress.length) {
-      await db.insert(userProgressTable).values({ userId, totalXp: 0, streak: 0, longestStreak: 0, level: 1, weeklyXp: 0, dailyXp: 0, dailyGoalXp: 50 });
-      progress = await db.select().from(userProgressTable).where(progressFilter(userId)).limit(1);
-    }
+    const progress = [await refreshLives(await ensureProgress(userId))];
 
     const totalLessons = await db.select().from(lessonsTable);
     const completions = await db.select().from(lessonCompletionsTable).where(completionFilter(userId));
@@ -57,6 +53,9 @@ router.get("/progress", async (req, res) => {
       longestStreak: cur.longestStreak,
       dailyGoalXp,
       dailyGoalCompleted: dailyXp >= dailyGoalXp,
+      currentLives: cur.currentLives,
+      maxLives: cur.maxLives,
+      nextLifeAt: nextLifeAt(cur)?.toISOString() ?? null,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get progress");

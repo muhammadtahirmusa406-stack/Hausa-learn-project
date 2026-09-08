@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   useGetProgress, 
   useGetDailyGoal, 
@@ -23,6 +24,7 @@ export default function Home() {
   
   const completeChallenge = useCompleteDailyChallenge();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
@@ -31,6 +33,10 @@ export default function Home() {
     
     completeChallenge.mutate({ data: { answer: selectedAnswer } }, {
       onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ["/api/progress"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/goals/daily"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/progress/activity"] });
         toast({
           title: "Great job!",
           description: `You earned ${challenge.xpReward} XP from the daily challenge!`,
