@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LessonCompleteInput {
-  /** Number of correct answers */
-  score: number;
-  totalQuestions?: number;
+export interface UnlockUnitResult {
+  success: boolean;
+  message: string;
 }

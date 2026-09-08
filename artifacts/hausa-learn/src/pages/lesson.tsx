@@ -1,228 +1,252 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
-import { useGetLesson, useCompleteLesson, useSubmitAnswer } from "@workspace/api-client-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGetLesson, useSubmitAnswer, useCompleteLesson } from "@workspace/api-client-react";
+import { X, Volume2, ArrowRight, Flame, Trophy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { X, CheckCircle, XCircle, Trophy } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 export default function LessonFlow() {
-  const { id } = useParams<{ id: string }>();
-  const lessonId = parseInt(id, 10);
+  const params = useParams();
+  const id = parseInt(params.id || "0", 10);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  const { data: lesson, isLoading } = useGetLesson(lessonId, {
-    query: { enabled: !!lessonId }
-  });
-
-  const completeMutation = useCompleteLesson();
-  const submitAnswerMutation = useSubmitAnswer();
+  const { data: lesson, isLoading, error } = useGetLesson(id);
+  const submitAnswer = useSubmitAnswer();
+  const completeLesson = useCompleteLesson();
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [score, setScore] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [textInput, setTextInput] = useState("");
+  const [feedback, setFeedback] = useState<{ isCorrect: boolean; explanation?: string | null; correctAnswer: string } | null>(null);
   const [isFinished, setIsFinished] = useState(false);
-  const [completionData, setCompletionData] = useState<any>(null);
+  const [score, setScore] = useState(0);
 
-  if (isLoading || !lesson) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  const currentExercise = lesson?.exercises?.[currentIndex];
+  const progressPercent = lesson?.exercises ? (currentIndex / lesson.exercises.length) * 100 : 0;
 
-  const exercise = lesson.exercises[currentIndex];
-  const progressPercent = (currentIndex / lesson.exercises.length) * 100;
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-NG'; // Nigerian English accent is closer for West African languages
+    utterance.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleCheck = () => {
-    if (!selectedAnswer) return;
+    if (!currentExercise) return;
+    const answer = currentExercise.type === 'typing' || currentExercise.type === 'fill_blank' 
+      ? textInput 
+      : selectedOption;
 
-    // Fast local check for UX, but could wait for mutation
-    submitAnswerMutation.mutate(
-      { id: exercise.id, data: { answer: selectedAnswer } },
-      {
-        onSuccess: (result) => {
-          setIsCorrect(result.isCorrect);
-          setIsAnswered(true);
-          if (result.isCorrect) {
-            setScore(s => s + 1);
-          }
-        }
+    if (!answer) return;
+
+    submitAnswer.mutate({ id: currentExercise.id, data: { answer } }, {
+      onSuccess: (res) => {
+        setFeedback({
+          isCorrect: res.isCorrect,
+          explanation: res.explanation,
+          correctAnswer: res.correctAnswer
+        });
+        if (res.isCorrect) setScore(s => s + 1);
+      },
+      onError: () => {
+        toast({ title: "Error", description: "Failed to check answer.", variant: "destructive" });
       }
-    );
+    });
   };
 
   const handleNext = () => {
-    if (currentIndex < lesson.exercises.length - 1) {
-      setCurrentIndex(curr => curr + 1);
-      setSelectedAnswer(null);
-      setIsAnswered(false);
+    setFeedback(null);
+    setSelectedOption(null);
+    setTextInput("");
+    
+    if (lesson && currentIndex < lesson.exercises.length - 1) {
+      setCurrentIndex(c => c + 1);
     } else {
-      // Finish lesson
-      completeMutation.mutate(
-        { id: lessonId, data: { score } },
-        {
-          onSuccess: (res) => {
-            setCompletionData(res);
-            setIsFinished(true);
-          }
-        }
-      );
+      handleFinish();
     }
   };
 
-  const handleQuit = () => {
-    if (confirm("Are you sure you want to quit? You will lose your progress.")) {
-      setLocation("/learn");
-    }
+  const handleFinish = () => {
+    if (!lesson) return;
+    completeLesson.mutate({ id: lesson.id, data: { score, totalQuestions: lesson.exercises.length } }, {
+      onSuccess: () => {
+        setIsFinished(true);
+      }
+    });
   };
 
-  if (isFinished && completionData) {
+  if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
+  if (error || !lesson) return <div className="p-8 text-center text-destructive font-bold">Failed to load lesson.</div>;
+
+  if (isFinished) {
     return (
-      <div className="min-h-[100dvh] flex flex-col p-6 max-w-2xl mx-auto bg-background animate-in fade-in duration-500">
-        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
-          <motion.div 
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", bounce: 0.5 }}
-            className="w-32 h-32 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center border-b-[8px] border-secondary/80"
-          >
-            <Trophy className="w-16 h-16" />
-          </motion.div>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background relative overflow-hidden">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center z-10 space-y-8 max-w-md w-full"
+        >
+          <div className="w-32 h-32 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Trophy className="w-16 h-16 text-primary" />
+          </div>
           
-          <div>
-            <h1 className="text-4xl font-display font-bold text-foreground mb-4">Lesson Complete!</h1>
-            <p className="text-xl text-muted-foreground font-medium">
-              You scored {score} out of {lesson.exercises.length}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
-            <div className="bg-card border-2 border-border p-4 rounded-2xl flex flex-col items-center">
-              <span className="text-sm font-bold text-muted-foreground mb-1">XP EARNED</span>
-              <span className="text-2xl font-display font-bold text-primary">+{completionData.xpEarned}</span>
+          <h1 className="text-4xl font-display font-bold text-foreground">Lesson Complete!</h1>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-card border-2 border-border p-4 rounded-2xl text-center">
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Score</p>
+              <p className="text-3xl font-display font-bold text-foreground">{score}/{lesson.exercises.length}</p>
             </div>
-            <div className="bg-card border-2 border-border p-4 rounded-2xl flex flex-col items-center">
-              <span className="text-sm font-bold text-muted-foreground mb-1">STREAK</span>
-              <span className="text-2xl font-display font-bold text-secondary">{completionData.streak}</span>
+            <div className="bg-secondary/10 border-2 border-secondary/20 p-4 rounded-2xl text-center">
+              <p className="text-sm font-bold text-secondary uppercase tracking-wider mb-1">XP Earned</p>
+              <p className="text-3xl font-display font-bold text-secondary">+<AnimatedCounter value={lesson.xpReward} /></p>
             </div>
           </div>
-        </div>
 
-        <div className="pt-6">
-          <Button 
-            className="w-full h-14 text-lg font-bold rounded-2xl" 
-            onClick={() => setLocation("/learn")}
-          >
-            Continue
+          <Button onClick={() => setLocation("/learn")} className="w-full rounded-2xl h-14 text-lg font-bold shadow-lg" size="lg">
+            Continue <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background max-w-3xl mx-auto">
+    <div className="min-h-screen flex flex-col max-w-3xl mx-auto">
       {/* Header */}
       <header className="px-4 py-6 flex items-center gap-4">
-        <button onClick={handleQuit} className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2">
-          <X className="w-6 h-6" />
-        </button>
-        <Progress value={progressPercent} className="flex-1 h-4 bg-muted" />
+        <Button variant="ghost" size="icon" className="rounded-full shrink-0" onClick={() => setLocation("/learn")}>
+          <X className="w-6 h-6 text-muted-foreground" />
+        </Button>
+        <div className="flex-1">
+          <Progress value={progressPercent} className="h-4 bg-muted" />
+        </div>
+        <div className="font-bold text-sm text-muted-foreground whitespace-nowrap">
+          {currentIndex + 1} / {lesson.exercises.length}
+        </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col px-4 md:px-8 py-4 overflow-y-auto">
+      <main className="flex-1 flex flex-col p-4 md:p-8">
         <AnimatePresence mode="wait">
-          <motion.div
+          <motion.div 
             key={currentIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1 flex flex-col"
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -50, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full"
           >
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-8">
-              {exercise?.question}
+            <h2 className="text-3xl font-display font-bold text-foreground mb-8 text-center md:text-left leading-tight">
+              {currentExercise?.question}
             </h2>
 
-            {exercise?.hausa && (
-              <div className="text-lg md:text-xl font-medium text-foreground bg-muted p-4 rounded-2xl border border-border mb-8">
-                {exercise.hausa}
+            {currentExercise?.audioWord && (
+              <div className="flex justify-center md:justify-start mb-8">
+                <Button 
+                  onClick={() => speak(currentExercise.audioWord!)}
+                  variant="outline" 
+                  className="w-16 h-16 rounded-2xl border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary shadow-sm"
+                >
+                  <Volume2 className="w-8 h-8" />
+                </Button>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto md:mt-0">
-              {exercise?.options.map((option, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => !isAnswered && setSelectedAnswer(option)}
-                  disabled={isAnswered}
-                  className={cn(
-                    "p-4 text-left border-2 rounded-2xl font-medium text-lg transition-all duration-200 border-b-4 active:border-b-2 active:translate-y-[2px]",
-                    selectedAnswer === option && !isAnswered
-                      ? "border-primary bg-primary/10 text-primary border-b-primary"
-                      : isAnswered && selectedAnswer === option
-                      ? isCorrect 
-                        ? "border-primary bg-primary/10 text-primary border-b-primary"
-                        : "border-destructive bg-destructive/10 text-destructive border-b-destructive"
-                      : "border-border bg-card text-card-foreground hover:bg-muted"
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+            {/* Exercise Types */}
+            {currentExercise?.type === 'multiple_choice' || currentExercise?.type === 'translation' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {currentExercise.options.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => !feedback && setSelectedOption(opt)}
+                    disabled={!!feedback}
+                    className={`p-6 rounded-2xl text-lg font-bold transition-all border-2 text-center md:text-left ${
+                      selectedOption === opt 
+                        ? 'border-primary bg-primary/10 text-primary scale-[1.02] shadow-sm' 
+                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted'
+                    } ${feedback && opt === feedback.correctAnswer ? 'border-accent bg-accent/10 text-accent' : ''} 
+                      ${feedback && selectedOption === opt && !feedback.isCorrect ? 'border-destructive bg-destructive/10 text-destructive' : ''}`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="w-full">
+                <Input
+                  autoFocus
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  disabled={!!feedback}
+                  className="h-16 text-xl rounded-2xl border-2 font-bold px-6 bg-card"
+                  placeholder="Type your answer here..."
+                  onKeyDown={(e) => e.key === 'Enter' && textInput && !feedback && handleCheck()}
+                />
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* Footer Actions */}
-      <div className={cn(
-        "border-t-2 p-4 md:p-8 transition-colors duration-300",
-        isAnswered 
-          ? isCorrect ? "bg-primary/10 border-primary/20" : "bg-destructive/10 border-destructive/20"
-          : "bg-background border-transparent"
-      )}>
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          {isAnswered ? (
-            <div className="flex items-center gap-4">
-              <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center",
-                isCorrect ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"
-              )}>
-                {isCorrect ? <CheckCircle className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}
-              </div>
+      {/* Footer / Feedback Action */}
+      <div className="p-4 md:p-8 mt-auto">
+        <AnimatePresence>
+          {feedback && (
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className={`mb-6 p-6 rounded-2xl border-2 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between ${
+                feedback.isCorrect 
+                  ? 'bg-accent/10 border-accent/30 text-accent-foreground' 
+                  : 'bg-destructive/10 border-destructive/30 text-destructive-foreground'
+              }`}
+            >
               <div>
-                <h3 className={cn("text-xl font-bold font-display", isCorrect ? "text-primary" : "text-destructive")}>
-                  {isCorrect ? "Excellent!" : "Not quite"}
+                <h3 className="text-2xl font-display font-bold mb-1 flex items-center gap-2">
+                  {feedback.isCorrect ? "Correct!" : "Not quite"}
                 </h3>
+                {!feedback.isCorrect && (
+                  <p className="font-bold opacity-90 mt-2">Correct answer: <span className="underline decoration-2">{feedback.correctAnswer}</span></p>
+                )}
+                {feedback.explanation && (
+                  <p className="font-medium opacity-80 mt-1">{feedback.explanation}</p>
+                )}
               </div>
-            </div>
-          ) : <div />}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <Button
-            size="lg"
-            className={cn(
-              "min-w-[150px] h-12 text-lg font-bold rounded-2xl",
-              isAnswered && isCorrect ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "",
-              isAnswered && !isCorrect ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""
-            )}
-            disabled={!selectedAnswer && !isAnswered || completeMutation.isPending}
-            onClick={isAnswered ? handleNext : handleCheck}
-          >
-            {isAnswered ? "Continue" : "Check"}
-          </Button>
+        <div className="max-w-2xl mx-auto">
+          {!feedback ? (
+            <Button 
+              className="w-full h-14 text-lg font-bold rounded-2xl shadow-md"
+              disabled={(!selectedOption && !textInput) || submitAnswer.isPending}
+              onClick={handleCheck}
+            >
+              {submitAnswer.isPending ? "Checking..." : "Check Answer"}
+            </Button>
+          ) : (
+            <Button 
+              className={`w-full h-14 text-lg font-bold rounded-2xl shadow-md ${
+                feedback.isCorrect 
+                  ? 'bg-accent hover:bg-accent/90 text-accent-foreground' 
+                  : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+              }`}
+              onClick={handleNext}
+            >
+              Continue
+            </Button>
+          )}
         </div>
       </div>
     </div>
   );
-}
-
-// Utility class included inline since importing might be tricky if not exported
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
 }

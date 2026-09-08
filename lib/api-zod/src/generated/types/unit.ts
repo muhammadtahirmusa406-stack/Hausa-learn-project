@@ -6,18 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Lesson {
+export interface Unit {
   id: number;
   title: string;
   description: string;
-  category: string;
-  xpReward: number;
+  iconEmoji: string;
   order: number;
-  isUnlocked: boolean;
+  isLocked: boolean;
   isCompleted: boolean;
-  exerciseCount: number;
-  /** @nullable */
-  iconEmoji?: string | null;
-  /** @nullable */
-  unitId?: number | null;
+  completedLessons: number;
+  totalLessons: number;
+  xpRequired: number;
+  checkpointUnlocked?: boolean;
 }

@@ -14,4 +14,5 @@ export const ExerciseType = {
   translation: 'translation',
   fill_blank: 'fill_blank',
   match_pair: 'match_pair',
+  typing: 'typing',
 } as const;

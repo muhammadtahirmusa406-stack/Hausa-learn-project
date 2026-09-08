@@ -20,4 +20,6 @@ export interface Exercise {
   order: number;
   /** @nullable */
   hint?: string | null;
+  /** @nullable */
+  audioWord?: string | null;
 }

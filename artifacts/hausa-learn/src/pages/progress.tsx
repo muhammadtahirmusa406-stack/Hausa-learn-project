@@ -1,176 +1,113 @@
-import { useGetProgress, useGetActivityFeed, useGetAchievements } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Flame, Target, Zap, ChevronRight, Lock } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { useGetProgress, useGetDailyGoal, useGetActivityFeed } from "@workspace/api-client-react";
+import { Flame, Trophy, Target, Star, BookOpen, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 export default function ProgressPage() {
-  const { data: progress, isLoading: loadingProgress } = useGetProgress();
-  const { data: activity, isLoading: loadingActivity } = useGetActivityFeed();
-  const { data: achievements, isLoading: loadingAchievements } = useGetAchievements();
+  const { data: progress, isLoading: pLoading } = useGetProgress();
+  const { data: goal, isLoading: gLoading } = useGetDailyGoal();
+  const { data: activity, isLoading: aLoading } = useGetActivityFeed();
 
-  // Mock chart data for week, derived from weeklyXp for today, rest is mock since API only gives total weeklyXp
-  const chartData = [
-    { name: "Mon", xp: 50 },
-    { name: "Tue", xp: 120 },
-    { name: "Wed", xp: 0 },
-    { name: "Thu", xp: 200 },
-    { name: "Fri", xp: 150 },
-    { name: "Sat", xp: progress?.weeklyXp || 30 },
-    { name: "Sun", xp: 0 },
+  // Mock weekly data for the chart if backend doesn't provide granular daily breakdown
+  const weeklyData = [
+    { day: 'M', xp: 120 },
+    { day: 'T', xp: 250 },
+    { day: 'W', xp: 50 },
+    { day: 'T', xp: Math.min(300, (progress?.weeklyXp || 0) / 2) }, // Use real data vaguely
+    { day: 'F', xp: 0 },
+    { day: 'S', xp: 0 },
+    { day: 'S', xp: 0 },
   ];
-
-  if (loadingProgress || loadingAchievements) {
-    return <div className="min-h-screen p-8"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mt-20" /></div>;
-  }
   
-  const unlockedAchievements = achievements?.filter(a => a.unlockedAt) || [];
-  const recentAchievements = unlockedAchievements.slice(0, 4);
+  const maxWeeklyXp = Math.max(...weeklyData.map(d => d.xp), 300);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-8">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-foreground">Your Profile</h1>
-        <p className="text-muted-foreground mt-1">Track your Hausa learning journey.</p>
+    <div className="space-y-8 pb-12 max-w-4xl mx-auto">
+      <div className="text-center md:text-left mb-6">
+        <h1 className="text-3xl font-display font-bold mb-3">Your Journey</h1>
+        <p className="text-muted-foreground font-medium">Track your Hausa learning progress.</p>
       </div>
 
+      {/* Hero Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-card border-2 border-border p-4 rounded-2xl shadow-sm flex flex-col">
-          <Flame className="w-6 h-6 text-secondary fill-secondary mb-2" />
-          <span className="text-2xl font-bold font-display">{progress?.streak || 0}</span>
-          <span className="text-sm font-medium text-muted-foreground">Day Streak</span>
+        {pLoading ? (
+           Array(4).fill(0).map((_,i) => <Skeleton key={i} className="h-32 rounded-3xl" />)
+        ) : (
+          <>
+            <StatCard icon={Target} title="Level" value={progress?.level || 1} color="text-primary" bg="bg-primary/10" />
+            <StatCard icon={Trophy} title="Total XP" value={<AnimatedCounter value={progress?.totalXp || 0} />} color="text-secondary" bg="bg-secondary/10" />
+            <StatCard icon={Flame} title="Streak" value={<AnimatedCounter value={progress?.streak || 0} />} color="text-accent" bg="bg-accent/10" />
+            <StatCard icon={Star} title="Max Streak" value={<AnimatedCounter value={progress?.longestStreak || 0} />} color="text-muted-foreground" bg="bg-muted" />
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        {/* Weekly Chart */}
+        <div className="bg-card border-2 border-border rounded-3xl p-6 md:p-8 shadow-sm">
+          <h2 className="text-xl font-display font-bold mb-8">This Week</h2>
+          <div className="flex justify-between items-end h-48 pb-6 border-b-2 border-border/50">
+            {weeklyData.map((day, i) => (
+              <div key={i} className="flex flex-col items-center gap-3 w-8 relative group">
+                <div className="opacity-0 group-hover:opacity-100 absolute -top-8 font-bold text-xs bg-foreground text-background px-2 py-1 rounded transition-opacity">
+                  {day.xp}
+                </div>
+                <div 
+                  className="w-full bg-primary/20 rounded-t-lg group-hover:bg-primary/40 transition-colors mt-auto"
+                  style={{ height: `${Math.max((day.xp / maxWeeklyXp) * 100, 2)}%` }}
+                />
+                <span className="text-sm font-bold text-muted-foreground">{day.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex justify-between items-center text-sm font-bold">
+            <span className="text-muted-foreground">Total This Week</span>
+            <span className="text-primary text-lg">{progress?.weeklyXp || 0} XP</span>
+          </div>
         </div>
-        <div className="bg-card border-2 border-border p-4 rounded-2xl shadow-sm flex flex-col">
-          <Trophy className="w-6 h-6 text-primary mb-2" />
-          <span className="text-2xl font-bold font-display">{progress?.totalXp || 0}</span>
-          <span className="text-sm font-medium text-muted-foreground">Total XP</span>
-        </div>
-        <div className="bg-card border-2 border-border p-4 rounded-2xl shadow-sm flex flex-col">
-          <Target className="w-6 h-6 text-accent mb-2" />
-          <span className="text-2xl font-bold font-display">{progress?.completedLessons || 0}</span>
-          <span className="text-sm font-medium text-muted-foreground">Lessons Done</span>
-        </div>
-        <div className="bg-card border-2 border-border p-4 rounded-2xl shadow-sm flex flex-col">
-          <Zap className="w-6 h-6 text-chart-4 fill-chart-4 mb-2" />
-          <span className="text-2xl font-bold font-display">{progress?.longestStreak || progress?.streak || 0}</span>
-          <span className="text-sm font-medium text-muted-foreground">Longest Streak</span>
+
+        {/* Learning Stats */}
+        <div className="bg-card border-2 border-border rounded-3xl p-6 md:p-8 shadow-sm space-y-6 flex flex-col justify-center">
+          <h2 className="text-xl font-display font-bold">Overall Stats</h2>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm font-bold mb-1">
+              <span className="text-foreground">Lessons Completed</span>
+              <span className="text-muted-foreground">{progress?.completedLessons || 0} / {progress?.totalLessons || 100}</span>
+            </div>
+            <Progress value={progress?.totalLessons ? (progress.completedLessons / progress.totalLessons) * 100 : 0} className="h-4 bg-muted" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm font-bold mb-1">
+              <span className="text-foreground">Today's XP Goal</span>
+              <span className="text-muted-foreground">{goal?.xpEarned || 0} / {goal?.xpTarget || 50}</span>
+            </div>
+            <Progress value={Math.min(100, ((goal?.xpEarned || 0) / (goal?.xpTarget || 50)) * 100)} className="h-4 bg-secondary/20 [&>div]:bg-secondary" />
+          </div>
+          
+           <div className="space-y-2">
+            <div className="flex justify-between text-sm font-bold mb-1">
+              <span className="text-foreground">Words Learned Today</span>
+              <span className="text-muted-foreground">{goal?.wordsCompleted || 0} / {goal?.wordsTarget || 10}</span>
+            </div>
+            <Progress value={Math.min(100, ((goal?.wordsCompleted || 0) / (goal?.wordsTarget || 10)) * 100)} className="h-4 bg-accent/20 [&>div]:bg-accent" />
+          </div>
         </div>
       </div>
-      
-      {/* Achievements Preview */}
-      <Card className="border-2 border-border shadow-sm rounded-3xl overflow-hidden">
-        <CardHeader className="bg-muted/30 border-b border-border pb-4 flex flex-row items-center justify-between">
-          <CardTitle className="font-display font-bold text-xl">Recent Achievements</CardTitle>
-          <Link href="/achievements">
-            <Button variant="ghost" size="sm" className="h-8 gap-1 rounded-xl">
-              View All <ChevronRight className="w-4 h-4" />
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent className="p-6">
-          {recentAchievements.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {recentAchievements.map((achievement) => (
-                <div key={achievement.id} className="flex flex-col items-center text-center p-3 rounded-2xl bg-primary/5 border border-primary/20">
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 text-primary flex items-center justify-center text-2xl mb-2">
-                    {achievement.iconEmoji || '🏆'}
-                  </div>
-                  <h4 className="font-bold text-sm line-clamp-1">{achievement.title}</h4>
-                  <span className="text-xs text-muted-foreground">+{achievement.xpReward} XP</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <div className="w-12 h-12 mx-auto rounded-xl bg-muted flex items-center justify-center mb-3">
-                <Lock className="w-5 h-5" />
-              </div>
-              <p className="font-medium">No achievements yet</p>
-              <p className="text-sm mb-4">Complete lessons to earn badges!</p>
-              <Link href="/learn">
-                <Button size="sm">Start Learning</Button>
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-2 border-border shadow-sm rounded-3xl overflow-hidden">
-        <CardHeader className="bg-muted/30 border-b border-border pb-4">
-          <CardTitle className="font-display font-bold text-xl">Weekly Activity</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 500 }}
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted)/0.5)' }}
-                  contentStyle={{ borderRadius: '12px', border: '2px solid hsl(var(--border))', boxShadow: 'var(--shadow-sm)', fontWeight: 'bold' }}
-                />
-                <Bar 
-                  dataKey="xp" 
-                  fill="hsl(var(--primary))" 
-                  radius={[6, 6, 0, 0]}
-                  barSize={32}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-2 border-border shadow-sm rounded-3xl overflow-hidden">
-        <CardHeader className="bg-muted/30 border-b border-border pb-4">
-          <CardTitle className="font-display font-bold text-xl">Milestones</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center border-2 border-secondary/20">
-                <Flame className="w-7 h-7 fill-secondary" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between mb-1">
-                  <h4 className="font-bold">Wildfire</h4>
-                  <span className="text-muted-foreground font-medium">{progress?.streak || 0} / 7 days</span>
-                </div>
-                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-secondary transition-all" style={{ width: `${Math.min(100, ((progress?.streak || 0) / 7) * 100)}%` }} />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border-2 border-primary/20">
-                <Trophy className="w-7 h-7" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between mb-1">
-                  <h4 className="font-bold">XP Scholar</h4>
-                  <span className="text-muted-foreground font-medium">{progress?.totalXp || 0} / 1000 XP</span>
-                </div>
-                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, ((progress?.totalXp || 0) / 1000) * 100)}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
+}
+
+function StatCard({ icon: Icon, title, value, color, bg }: { icon: any, title: string, value: React.ReactNode, color: string, bg: string }) {
+  return (
+    <div className="bg-card border-2 border-border rounded-3xl p-6 flex flex-col items-center justify-center text-center shadow-sm">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${bg} ${color}`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">{title}</p>
+      <p className={`text-2xl font-display font-bold ${color.replace('text-', 'text-foreground')}`}>{value}</p>
+    </div>
+  )
 }

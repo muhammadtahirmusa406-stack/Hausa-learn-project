@@ -17,6 +17,10 @@ tags:
     description: User progress operations
   - name: vocabulary
     description: Vocabulary operations
+  - name: units
+    description: Unit (course section) operations
+  - name: goals
+    description: Daily goal operations
   - name: Auth
     description: Browser and mobile authentication endpoints.
   - name: gamification
@@ -34,6 +38,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /units:
+    get:
+      operationId: getUnits
+      tags: [units]
+      summary: Get all units with progress and lock state
+      responses:
+        "200":
+          description: List of units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Unit"
+
+  /units/{id}/unlock:
+    post:
+      operationId: unlockUnit
+      tags: [units]
+      summary: Unlock a unit via checkpoint (skip prerequisite)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unit unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlockUnitResult"
+        "404":
+          description: Unit not found
 
   /lessons:
     get:
@@ -184,6 +224,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ActivityItem"
+
+  /goals/daily:
+    get:
+      operationId: getDailyGoal
+      tags: [goals]
+      summary: Get today's daily learning goal
+      responses:
+        "200":
+          description: Daily goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyGoal"
 
   /vocabulary:
     get:
@@ -412,6 +465,42 @@ components:
       required:
         - status
 
+    Unit:
+      type: object
+      required: [id, title, description, iconEmoji, order, isLocked, isCompleted, completedLessons, totalLessons, xpRequired]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        iconEmoji:
+          type: string
+        order:
+          type: integer
+        isLocked:
+          type: boolean
+        isCompleted:
+          type: boolean
+        completedLessons:
+          type: integer
+        totalLessons:
+          type: integer
+        xpRequired:
+          type: integer
+        checkpointUnlocked:
+          type: boolean
+
+    UnlockUnitResult:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
     Lesson:
       type: object
       required: [id, title, description, category, xpReward, order, isUnlocked, isCompleted, exerciseCount]
@@ -436,6 +525,8 @@ components:
           type: integer
         iconEmoji:
           type: ["string", "null"]
+        unitId:
+          type: ["integer", "null"]
 
     LessonCategory:
       type: object
@@ -476,6 +567,8 @@ components:
           type: integer
         iconEmoji:
           type: ["string", "null"]
+        unitId:
+          type: ["integer", "null"]
         exercises:
           type: array
           items:
@@ -491,7 +584,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [multiple_choice, translation, fill_blank, match_pair]
+          enum: [multiple_choice, translation, fill_blank, match_pair, typing]
         question:
           type: string
         hausa:
@@ -506,6 +599,8 @@ components:
           type: integer
         hint:
           type: ["string", "null"]
+        audioWord:
+          type: ["string", "null"]
 
     LessonCompleteInput:
       type: object
@@ -514,6 +609,8 @@ components:
         score:
           type: integer
           description: Number of correct answers
+        totalQuestions:
+          type: integer
 
     LessonCompleteResult:
       type: object
@@ -529,6 +626,10 @@ components:
           type: boolean
         message:
           type: ["string", "null"]
+        newAchievements:
+          type: array
+          items:
+            type: string
 
     AnswerInput:
       type: object
@@ -566,6 +667,29 @@ components:
           type: integer
         longestStreak:
           type: integer
+        dailyGoalXp:
+          type: integer
+        dailyGoalCompleted:
+          type: boolean
+
+    DailyGoal:
+      type: object
+      required: [xpTarget, xpEarned, wordsTarget, wordsCompleted, lessonsTarget, lessonsCompleted, isCompleted]
+      properties:
+        xpTarget:
+          type: integer
+        xpEarned:
+          type: integer
+        wordsTarget:
+          type: integer
+        wordsCompleted:
+          type: integer
+        lessonsTarget:
+          type: integer
+        lessonsCompleted:
+          type: integer
+        isCompleted:
+          type: boolean
 
     ActivityItem:
       type: object

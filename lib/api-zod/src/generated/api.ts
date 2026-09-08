@@ -17,6 +17,38 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get all units with progress and lock state
+ */
+export const GetUnitsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "iconEmoji": zod.string(),
+  "order": zod.number(),
+  "isLocked": zod.boolean(),
+  "isCompleted": zod.boolean(),
+  "completedLessons": zod.number(),
+  "totalLessons": zod.number(),
+  "xpRequired": zod.number(),
+  "checkpointUnlocked": zod.boolean().optional()
+})
+export const GetUnitsResponse = zod.array(GetUnitsResponseItem)
+
+
+/**
+ * @summary Unlock a unit via checkpoint (skip prerequisite)
+ */
+export const UnlockUnitParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnlockUnitResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
  * @summary List all lessons
  */
 export const GetLessonsResponseItem = zod.object({
@@ -29,7 +61,8 @@ export const GetLessonsResponseItem = zod.object({
   "isUnlocked": zod.boolean(),
   "isCompleted": zod.boolean(),
   "exerciseCount": zod.number(),
-  "iconEmoji": zod.string().nullish()
+  "iconEmoji": zod.string().nullish(),
+  "unitId": zod.number().nullish()
 })
 export const GetLessonsResponse = zod.array(GetLessonsResponseItem)
 
@@ -49,7 +82,8 @@ export const GetLessonCategoriesResponseItem = zod.object({
   "isUnlocked": zod.boolean(),
   "isCompleted": zod.boolean(),
   "exerciseCount": zod.number(),
-  "iconEmoji": zod.string().nullish()
+  "iconEmoji": zod.string().nullish(),
+  "unitId": zod.number().nullish()
 })),
   "completedCount": zod.number(),
   "totalCount": zod.number()
@@ -75,16 +109,18 @@ export const GetLessonResponse = zod.object({
   "isCompleted": zod.boolean(),
   "exerciseCount": zod.number(),
   "iconEmoji": zod.string().nullish(),
+  "unitId": zod.number().nullish(),
   "exercises": zod.array(zod.object({
   "id": zod.number(),
   "lessonId": zod.number(),
-  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair']),
+  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair', 'typing']),
   "question": zod.string(),
   "hausa": zod.string().nullish(),
   "english": zod.string().nullish(),
   "options": zod.array(zod.string()),
   "order": zod.number(),
-  "hint": zod.string().nullish()
+  "hint": zod.string().nullish(),
+  "audioWord": zod.string().nullish()
 }))
 })
 
@@ -97,7 +133,8 @@ export const CompleteLessonParams = zod.object({
 })
 
 export const CompleteLessonBody = zod.object({
-  "score": zod.number().describe('Number of correct answers')
+  "score": zod.number().describe('Number of correct answers'),
+  "totalQuestions": zod.number().optional()
 })
 
 export const CompleteLessonResponse = zod.object({
@@ -105,7 +142,8 @@ export const CompleteLessonResponse = zod.object({
   "totalXp": zod.number(),
   "streak": zod.number(),
   "isNewBest": zod.boolean(),
-  "message": zod.string().nullish()
+  "message": zod.string().nullish(),
+  "newAchievements": zod.array(zod.string()).optional()
 })
 
 
@@ -119,13 +157,14 @@ export const GetExercisesParams = zod.object({
 export const GetExercisesResponseItem = zod.object({
   "id": zod.number(),
   "lessonId": zod.number(),
-  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair']),
+  "type": zod.enum(['multiple_choice', 'translation', 'fill_blank', 'match_pair', 'typing']),
   "question": zod.string(),
   "hausa": zod.string().nullish(),
   "english": zod.string().nullish(),
   "options": zod.array(zod.string()),
   "order": zod.number(),
-  "hint": zod.string().nullish()
+  "hint": zod.string().nullish(),
+  "audioWord": zod.string().nullish()
 })
 export const GetExercisesResponse = zod.array(GetExercisesResponseItem)
 
@@ -158,7 +197,9 @@ export const GetProgressResponse = zod.object({
   "totalLessons": zod.number(),
   "level": zod.number(),
   "weeklyXp": zod.number(),
-  "longestStreak": zod.number().optional()
+  "longestStreak": zod.number().optional(),
+  "dailyGoalXp": zod.number().optional(),
+  "dailyGoalCompleted": zod.boolean().optional()
 })
 
 
@@ -173,6 +214,20 @@ export const GetActivityFeedResponseItem = zod.object({
   "createdAt": zod.string()
 })
 export const GetActivityFeedResponse = zod.array(GetActivityFeedResponseItem)
+
+
+/**
+ * @summary Get today's daily learning goal
+ */
+export const GetDailyGoalResponse = zod.object({
+  "xpTarget": zod.number(),
+  "xpEarned": zod.number(),
+  "wordsTarget": zod.number(),
+  "wordsCompleted": zod.number(),
+  "lessonsTarget": zod.number(),
+  "lessonsCompleted": zod.number(),
+  "isCompleted": zod.boolean()
+})
 
 
 /**

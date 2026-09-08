@@ -19,5 +19,7 @@ export interface LessonDetail {
   exerciseCount: number;
   /** @nullable */
   iconEmoji?: string | null;
+  /** @nullable */
+  unitId?: number | null;
   exercises: Exercise[];
 }

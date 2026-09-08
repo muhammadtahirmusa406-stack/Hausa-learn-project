@@ -71,51 +71,48 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 40 33% 98%;
-  --foreground: 150 40% 15%;
+  --background: 32 100% 97%;
+  --foreground: 229 60% 15%;
 
-  --border: 40 20% 90%;
-  --input: 40 20% 90%;
-  --ring: 150 60% 30%;
+  --border: 34 46% 85%;
+  --input: 34 46% 85%;
+  --ring: 30 95% 44%;
 
   --card: 0 0% 100%;
-  --card-foreground: 150 40% 15%;
-  --card-border: 40 20% 90%;
+  --card-foreground: 229 60% 15%;
+  --card-border: 34 46% 85%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 150 40% 15%;
-  --popover-border: 40 20% 90%;
+  --popover-foreground: 229 60% 15%;
+  --popover-border: 34 46% 85%;
 
-  /* Deep Green */
-  --primary: 150 60% 30%;
+  --primary: 30 95% 44%;
   --primary-foreground: 0 0% 100%;
 
-  /* Saffron / Orange */
-  --secondary: 35 90% 55%;
+  --secondary: 229 60% 26%;
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 40 20% 95%;
-  --muted-foreground: 40 10% 50%;
+  --muted: 34 46% 89%;
+  --muted-foreground: 229 20% 40%;
 
-  /* Terracotta */
-  --accent: 15 65% 50%;
+  --accent: 153 40% 30%;
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 40 33% 98%;
-  --sidebar-foreground: 150 40% 15%;
-  --sidebar-border: 40 20% 90%;
-  --sidebar-primary: 150 60% 30%;
+  --sidebar: 32 100% 97%;
+  --sidebar-foreground: 229 60% 15%;
+  --sidebar-border: 34 46% 85%;
+  --sidebar-primary: 30 95% 44%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 40 20% 90%;
-  --sidebar-accent-foreground: 150 40% 15%;
-  --sidebar-ring: 150 60% 30%;
+  --sidebar-accent: 34 46% 89%;
+  --sidebar-accent-foreground: 229 60% 15%;
+  --sidebar-ring: 30 95% 44%;
 
-  --chart-1: 150 60% 30%;
-  --chart-2: 35 90% 55%;
-  --chart-3: 15 65% 50%;
+  --chart-1: 30 95% 44%;
+  --chart-2: 229 60% 26%;
+  --chart-3: 153 40% 30%;
   --chart-4: 45 100% 50%;
   --chart-5: 200 70% 50%;
 
@@ -154,44 +151,44 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 150 40% 10%;
-  --foreground: 40 33% 98%;
+  --background: 217 41% 10%;
+  --foreground: 32 100% 97%;
 
-  --border: 150 30% 20%;
-  --input: 150 30% 20%;
-  --ring: 150 60% 40%;
+  --border: 217 33% 25%;
+  --input: 217 33% 25%;
+  --ring: 30 95% 54%;
 
-  --card: 150 40% 13%;
-  --card-foreground: 40 33% 98%;
-  --card-border: 150 30% 20%;
+  --card: 217 33% 17%;
+  --card-foreground: 32 100% 97%;
+  --card-border: 217 33% 25%;
 
-  --popover: 150 40% 13%;
-  --popover-foreground: 40 33% 98%;
-  --popover-border: 150 30% 20%;
+  --popover: 217 33% 17%;
+  --popover-foreground: 32 100% 97%;
+  --popover-border: 217 33% 25%;
 
-  --primary: 150 60% 40%;
-  --primary-foreground: 150 60% 10%;
+  --primary: 30 95% 54%;
+  --primary-foreground: 217 41% 10%;
 
-  --secondary: 35 90% 55%;
-  --secondary-foreground: 35 90% 10%;
+  --secondary: 229 60% 46%;
+  --secondary-foreground: 32 100% 97%;
 
-  --muted: 150 30% 18%;
-  --muted-foreground: 40 10% 70%;
+  --muted: 217 33% 20%;
+  --muted-foreground: 217 20% 70%;
 
-  --accent: 15 65% 55%;
-  --accent-foreground: 15 65% 10%;
+  --accent: 153 40% 40%;
+  --accent-foreground: 32 100% 97%;
 
   --destructive: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 150 40% 10%;
-  --sidebar-foreground: 40 33% 98%;
-  --sidebar-border: 150 30% 20%;
-  --sidebar-primary: 150 60% 40%;
-  --sidebar-primary-foreground: 150 60% 10%;
-  --sidebar-accent: 150 30% 18%;
-  --sidebar-accent-foreground: 40 33% 98%;
-  --sidebar-ring: 150 60% 40%;
+  --sidebar: 217 41% 10%;
+  --sidebar-foreground: 32 100% 97%;
+  --sidebar-border: 217 33% 25%;
+  --sidebar-primary: 30 95% 54%;
+  --sidebar-primary-foreground: 217 41% 10%;
+  --sidebar-accent: 217 33% 20%;
+  --sidebar-accent-foreground: 32 100% 97%;
+  --sidebar-ring: 30 95% 54%;
   
   --shadow-2xs: 0px 2px 0px 0px rgba(0,0,0,0.3);
   --shadow-xs: 0px 3px 0px 0px rgba(0,0,0,0.4);
@@ -205,7 +202,7 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground transition-colors duration-300;
   }
   
   h1, h2, h3, h4, h5, h6 {

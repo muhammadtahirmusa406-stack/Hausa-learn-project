@@ -9,6 +9,25 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface Unit {
+  id: number;
+  title: string;
+  description: string;
+  iconEmoji: string;
+  order: number;
+  isLocked: boolean;
+  isCompleted: boolean;
+  completedLessons: number;
+  totalLessons: number;
+  xpRequired: number;
+  checkpointUnlocked?: boolean;
+}
+
+export interface UnlockUnitResult {
+  success: boolean;
+  message: string;
+}
+
 export interface Lesson {
   id: number;
   title: string;
@@ -21,6 +40,8 @@ export interface Lesson {
   exerciseCount: number;
   /** @nullable */
   iconEmoji?: string | null;
+  /** @nullable */
+  unitId?: number | null;
 }
 
 export interface LessonCategory {
@@ -38,6 +59,7 @@ export const ExerciseType = {
   translation: 'translation',
   fill_blank: 'fill_blank',
   match_pair: 'match_pair',
+  typing: 'typing',
 } as const;
 
 export interface Exercise {
@@ -53,6 +75,8 @@ export interface Exercise {
   order: number;
   /** @nullable */
   hint?: string | null;
+  /** @nullable */
+  audioWord?: string | null;
 }
 
 export interface LessonDetail {
@@ -67,12 +91,15 @@ export interface LessonDetail {
   exerciseCount: number;
   /** @nullable */
   iconEmoji?: string | null;
+  /** @nullable */
+  unitId?: number | null;
   exercises: Exercise[];
 }
 
 export interface LessonCompleteInput {
   /** Number of correct answers */
   score: number;
+  totalQuestions?: number;
 }
 
 export interface LessonCompleteResult {
@@ -82,6 +109,7 @@ export interface LessonCompleteResult {
   isNewBest: boolean;
   /** @nullable */
   message?: string | null;
+  newAchievements?: string[];
 }
 
 export interface AnswerInput {
@@ -103,6 +131,18 @@ export interface UserProgress {
   level: number;
   weeklyXp: number;
   longestStreak?: number;
+  dailyGoalXp?: number;
+  dailyGoalCompleted?: boolean;
+}
+
+export interface DailyGoal {
+  xpTarget: number;
+  xpEarned: number;
+  wordsTarget: number;
+  wordsCompleted: number;
+  lessonsTarget: number;
+  lessonsCompleted: number;
+  isCompleted: boolean;
 }
 
 export interface ActivityItem {

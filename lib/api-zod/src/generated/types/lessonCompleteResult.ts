@@ -13,4 +13,5 @@ export interface LessonCompleteResult {
   isNewBest: boolean;
   /** @nullable */
   message?: string | null;
+  newAchievements?: string[];
 }

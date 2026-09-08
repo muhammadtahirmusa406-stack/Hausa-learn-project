@@ -14,4 +14,6 @@ export interface UserProgress {
   level: number;
   weeklyXp: number;
   longestStreak?: number;
+  dailyGoalXp?: number;
+  dailyGoalCompleted?: boolean;
 }

@@ -27,6 +27,7 @@ import type {
   AuthUserEnvelope,
   BeginBrowserLoginParams,
   DailyChallenge,
+  DailyGoal,
   ErrorEnvelope,
   Exercise,
   GetVocabularyParams,
@@ -41,6 +42,8 @@ import type {
   LogoutSuccess,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  Unit,
+  UnlockUnitResult,
   UserProgress,
   VocabWord
 } from './api.schemas';
@@ -133,6 +136,153 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetUnitsUrl = () => {
+
+
+
+
+  return `/api/units`
+}
+
+/**
+ * @summary Get all units with progress and lock state
+ */
+export const getUnits = async ( options?: RequestInit): Promise<Unit[]> => {
+
+  return customFetch<Unit[]>(getGetUnitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUnitsQueryKey = () => {
+    return [
+    `/api/units`
+    ] as const;
+    }
+
+
+export const getGetUnitsQueryOptions = <TData = Awaited<ReturnType<typeof getUnits>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUnits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUnitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUnits>>> = ({ signal }) => getUnits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUnits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUnitsQueryResult = NonNullable<Awaited<ReturnType<typeof getUnits>>>
+export type GetUnitsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all units with progress and lock state
+ */
+
+export function useGetUnits<TData = Awaited<ReturnType<typeof getUnits>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUnits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUnitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUnlockUnitUrl = (id: number,) => {
+
+
+
+
+  return `/api/units/${id}/unlock`
+}
+
+/**
+ * @summary Unlock a unit via checkpoint (skip prerequisite)
+ */
+export const unlockUnit = async (id: number, options?: RequestInit): Promise<UnlockUnitResult> => {
+
+  return customFetch<UnlockUnitResult>(getUnlockUnitUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnlockUnitMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlockUnit>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlockUnit>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unlockUnit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlockUnit>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unlockUnit(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlockUnitMutationResult = NonNullable<Awaited<ReturnType<typeof unlockUnit>>>
+
+    export type UnlockUnitMutationError = ErrorType<void>
+
+    /**
+ * @summary Unlock a unit via checkpoint (skip prerequisite)
+ */
+export const useUnlockUnit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlockUnit>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlockUnit>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnlockUnitMutationOptions(options));
+    }
 
 export const getGetLessonsUrl = () => {
 
@@ -728,6 +878,83 @@ export function useGetActivityFeed<TData = Awaited<ReturnType<typeof getActivity
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetActivityFeedQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDailyGoalUrl = () => {
+
+
+
+
+  return `/api/goals/daily`
+}
+
+/**
+ * @summary Get today's daily learning goal
+ */
+export const getDailyGoal = async ( options?: RequestInit): Promise<DailyGoal> => {
+
+  return customFetch<DailyGoal>(getGetDailyGoalUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDailyGoalQueryKey = () => {
+    return [
+    `/api/goals/daily`
+    ] as const;
+    }
+
+
+export const getGetDailyGoalQueryOptions = <TData = Awaited<ReturnType<typeof getDailyGoal>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyGoal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDailyGoalQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyGoal>>> = ({ signal }) => getDailyGoal({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDailyGoal>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDailyGoalQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyGoal>>>
+export type GetDailyGoalQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get today's daily learning goal
+ */
+
+export function useGetDailyGoal<TData = Awaited<ReturnType<typeof getDailyGoal>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyGoal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDailyGoalQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
