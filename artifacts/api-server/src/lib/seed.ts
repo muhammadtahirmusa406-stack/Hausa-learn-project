@@ -7,7 +7,7 @@ import {
   achievementsTable,
   dailyChallengesTable,
 } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { logger } from "./logger";
 
 // ─── UNITS ────────────────────────────────────────────────────────────────────
@@ -541,12 +541,264 @@ const DAILY_CHALLENGE_POOL = [
   { question: "What does 'Kasuwa' mean?", hausa: "Kasuwa", english: "Market", options: ["Market", "Shop", "Bank", "School"], correctAnswer: "Market" },
 ];
 
+type BackfillSource = typeof exercisesTable.$inferSelect;
+
+function uniqueAnswers(values: string[], correctAnswer: string) {
+  return Array.from(new Set([correctAnswer, ...values.filter(Boolean)]))
+    .filter((value) => value.trim().length > 0)
+    .slice(0, 4);
+}
+
+function wordsForOrdering(source: BackfillSource) {
+  const phrase = source.hausa?.trim() ?? source.audioWord?.trim() ?? (
+    source.question.toLowerCase().includes("how do you say") ||
+    source.type === "typing" ||
+    source.type === "listening"
+      ? source.correctAnswer.trim()
+      : ""
+  );
+  if (!phrase) return [];
+  return phrase.split(/\s+/).filter(Boolean);
+}
+
+function inferredHausa(source: BackfillSource) {
+  const direct = source.audioWord?.trim() || source.hausa?.trim();
+  if (direct) return direct;
+
+  const question = source.question.toLowerCase();
+  if (question.includes("how do you say") || source.type === "typing" || source.type === "listening") {
+    return source.correctAnswer.trim();
+  }
+
+  return "";
+}
+
+function orderingWordsForSource(source: BackfillSource) {
+  const words = wordsForOrdering(source);
+  if (words.length >= 2) return words;
+
+  const hausa = inferredHausa(source);
+  return hausa ? ["Ina", "son", ...hausa.split(/\s+/)] : [];
+}
+
+/**
+ * Older development databases may contain the original short lessons while
+ * the current seed contains the expanded course. This backfill is additive
+ * and idempotent: it derives alternate practice formats from the existing
+ * lesson content and stops once each lesson has 15 questions.
+ */
+async function backfillLessonExercises() {
+  const lessons = await db.select().from(lessonsTable).orderBy(asc(lessonsTable.order));
+  const exercises = await db.select().from(exercisesTable).orderBy(asc(exercisesTable.order));
+  let totalAdded = 0;
+
+  for (const lesson of lessons) {
+    const lessonExercises = exercises.filter((exercise) => exercise.lessonId === lesson.id);
+    if (lessonExercises.length === 0) continue;
+    const hasListening = lessonExercises.some((exercise) => exercise.type === "listening");
+    const hasWordOrdering = lessonExercises.some((exercise) => exercise.type === "word_ordering");
+    if (lessonExercises.length >= 15 && hasListening && hasWordOrdering) continue;
+
+    const existingQuestions = new Set(lessonExercises.map((exercise) => exercise.question));
+    const candidates: Array<{
+      lessonId: number;
+      type: string;
+      question: string;
+      hausa: string | null;
+      english: string | null;
+      options: string[];
+      correctAnswer: string;
+      hint: string | null;
+      explanation: string | null;
+      audioWord: string | null;
+      order: number;
+    }> = [];
+    let nextOrder = Math.max(...lessonExercises.map((exercise) => exercise.order), 0) + 1;
+
+    const addCandidate = (candidate: Omit<typeof candidates[number], "order">) => {
+      if (existingQuestions.has(candidate.question)) return;
+      existingQuestions.add(candidate.question);
+      candidates.push({ ...candidate, order: nextOrder++ });
+    };
+
+    const sourceWithHausa = lessonExercises.find((source) => inferredHausa(source));
+    if (!lessonExercises.some((exercise) => exercise.type === "listening") && sourceWithHausa) {
+      const audioWord = inferredHausa(sourceWithHausa);
+      addCandidate({
+        lessonId: lesson.id,
+        type: "listening",
+        question: `Listen and type the Hausa word for: ${sourceWithHausa.english ?? sourceWithHausa.question}`,
+        hausa: audioWord,
+        english: sourceWithHausa.english,
+        options: [],
+        correctAnswer: audioWord,
+        hint: "Listen carefully, then type what you hear.",
+        explanation: sourceWithHausa.explanation,
+        audioWord,
+      });
+    }
+
+    if (!lessonExercises.some((exercise) => exercise.type === "word_ordering") && sourceWithHausa) {
+      const orderingWords = orderingWordsForSource(sourceWithHausa);
+      if (orderingWords.length >= 2) {
+        addCandidate({
+          lessonId: lesson.id,
+          type: "word_ordering",
+          question: `Arrange the words to say: ${sourceWithHausa.english ?? "the Hausa phrase"}`,
+          hausa: orderingWords.join(" "),
+          english: sourceWithHausa.english,
+          options: orderingWords,
+          correctAnswer: orderingWords.join(" "),
+          hint: "Tap the words in the correct Hausa order.",
+          explanation: sourceWithHausa.explanation,
+          audioWord: sourceWithHausa.audioWord,
+        });
+      }
+    }
+
+    for (const source of lessonExercises) {
+      const options = uniqueAnswers(
+        [...(source.options ?? []), ...lessonExercises.map((exercise) => exercise.correctAnswer)],
+        source.correctAnswer,
+      );
+
+      addCandidate({
+        lessonId: lesson.id,
+        type: "multiple_choice",
+        question: `Review: ${source.question}`,
+        hausa: source.hausa,
+        english: source.english,
+        options,
+        correctAnswer: source.correctAnswer,
+        hint: source.hint,
+        explanation: source.explanation ?? `Review the answer from "${lesson.title}".`,
+        audioWord: source.audioWord,
+      });
+
+      addCandidate({
+        lessonId: lesson.id,
+        type: "typing",
+        question: `Type the answer: ${source.question}`,
+        hausa: source.hausa,
+        english: source.english,
+        options: [],
+        correctAnswer: source.correctAnswer,
+        hint: source.hint,
+        explanation: source.explanation,
+        audioWord: source.audioWord,
+      });
+
+      const audioWord = source.audioWord ?? source.hausa;
+      if (audioWord) {
+        addCandidate({
+          lessonId: lesson.id,
+          type: "listening",
+          question: `Listen and type the Hausa word for: ${source.english ?? source.question}`,
+          hausa: source.hausa ?? audioWord,
+          english: source.english,
+          options: [],
+          correctAnswer: audioWord,
+          hint: "Listen carefully, then type what you hear.",
+          explanation: source.explanation,
+          audioWord,
+        });
+      }
+
+      const orderingWords = orderingWordsForSource(source);
+      if (orderingWords.length >= 2) {
+        addCandidate({
+          lessonId: lesson.id,
+          type: "word_ordering",
+          question: `Arrange the words to say: ${source.english ?? "the Hausa phrase"}`,
+          hausa: source.hausa,
+          english: source.english,
+          options: orderingWords,
+          correctAnswer: orderingWords.join(" "),
+          hint: "Tap the words in the correct Hausa order.",
+          explanation: source.explanation,
+          audioWord: source.audioWord,
+        });
+      }
+    }
+
+    // A few legacy lessons only have three short source rows. Once their
+    // obvious review variants are exhausted, add distinct prompt formats
+    // based on the same Hausa/English pair rather than leaving the lesson
+    // below the curriculum minimum.
+    for (const source of lessonExercises) {
+      const hausa = inferredHausa(source);
+      if (!hausa) continue;
+      const english = source.english ?? source.question;
+
+      addCandidate({
+        lessonId: lesson.id,
+        type: "multiple_choice",
+        question: `Choose the Hausa word for: ${english}`,
+        hausa,
+        english: source.english,
+        options: uniqueAnswers(
+          [...(source.options ?? []), ...lessonExercises.map((exercise) => inferredHausa(exercise))],
+          hausa,
+        ),
+        correctAnswer: hausa,
+        hint: source.hint,
+        explanation: source.explanation,
+        audioWord: source.audioWord ?? hausa,
+      });
+
+      addCandidate({
+        lessonId: lesson.id,
+        type: "typing",
+        question: `Type the Hausa word for: ${english}`,
+        hausa,
+        english: source.english,
+        options: [],
+        correctAnswer: hausa,
+        hint: source.hint,
+        explanation: source.explanation,
+        audioWord: source.audioWord ?? hausa,
+      });
+    }
+
+    const rowsToInsert: typeof candidates = [];
+    const selectedQuestions = new Set<string>();
+    const selectCandidate = (candidate: (typeof candidates)[number] | undefined) => {
+      if (!candidate || selectedQuestions.has(candidate.question)) return;
+      selectedQuestions.add(candidate.question);
+      rowsToInsert.push(candidate);
+    };
+
+    if (!hasListening) {
+      selectCandidate(candidates.find((candidate) => candidate.type === "listening"));
+    }
+    if (!hasWordOrdering) {
+      selectCandidate(candidates.find((candidate) => candidate.type === "word_ordering"));
+    }
+
+    for (const candidate of candidates) {
+      if (lessonExercises.length + rowsToInsert.length >= 15) break;
+      selectCandidate(candidate);
+    }
+
+    if (rowsToInsert.length > 0) {
+      await db.insert(exercisesTable).values(rowsToInsert);
+      totalAdded += rowsToInsert.length;
+      logger.info({ lessonId: lesson.id, title: lesson.title, count: rowsToInsert.length }, "Backfilled lesson exercises");
+    }
+  }
+
+  if (totalAdded > 0) {
+    logger.info({ count: totalAdded }, "Lesson exercise backfill complete");
+  }
+}
+
 export async function seedDatabase() {
   try {
     // Check if already seeded
     const existingUnits = await db.select().from(unitsTable).limit(1);
     if (existingUnits.length > 0) {
-      logger.info("Database already seeded, skipping.");
+      logger.info("Database already seeded; checking for missing lesson exercises.");
+      await backfillLessonExercises();
       return;
     }
 
@@ -588,6 +840,7 @@ export async function seedDatabase() {
     }));
     const insertedExercises = await db.insert(exercisesTable).values(exercisesToInsert).returning();
     logger.info({ count: insertedExercises.length }, "Inserted exercises");
+    await backfillLessonExercises();
 
     // Insert vocabulary
     const insertedVocab = await db.insert(vocabularyTable).values(VOCABULARY).returning();
