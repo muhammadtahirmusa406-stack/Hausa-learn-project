@@ -4,7 +4,7 @@ import { eq, isNull } from "drizzle-orm";
 
 export const MAX_LIVES = 5;
 export const LIFE_REGENERATION_MS = 30 * 60 * 1000;
-export const STREAK_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const STREAK_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 export function userProgressWhere(userId: string | null) {
   return userId ? eq(userProgressTable.userId, userId) : isNull(userProgressTable.userId);
@@ -27,7 +27,22 @@ export async function ensureProgress(userId: string | null) {
     });
     rows = await db.select().from(userProgressTable).where(userProgressWhere(userId)).limit(1);
   }
-  return rows[0];
+
+  const progress = rows[0];
+  const now = new Date();
+  if (
+    progress.lastActivityAt &&
+    now.getTime() - progress.lastActivityAt.getTime() >= STREAK_WINDOW_MS &&
+    progress.streak !== 0
+  ) {
+    await db.update(userProgressTable).set({
+      streak: 0,
+      updatedAt: now,
+    }).where(eq(userProgressTable.id, progress.id));
+    return { ...progress, streak: 0, updatedAt: now };
+  }
+
+  return progress;
 }
 
 /**
@@ -86,7 +101,7 @@ function isSameUtcDay(left: Date, right: Date) {
 export function calculateNextStreak(currentStreak: number, lastActivityAt: Date | null, now = new Date()) {
   if (!lastActivityAt) return 1;
   const elapsed = now.getTime() - lastActivityAt.getTime();
-  if (elapsed > STREAK_WINDOW_MS || elapsed < 0) return 1;
+  if (elapsed >= STREAK_WINDOW_MS || elapsed < 0) return 1;
   if (isSameUtcDay(lastActivityAt, now)) return currentStreak;
   return currentStreak + 1;
 }
